@@ -1,0 +1,12 @@
+{
+	"description": "Bismuth graphics service for Linux",
+	"dependencies": {
+		"bindbc-opengl": "~>1.1.1"
+	},
+	"authors": [
+		"Icosahedron Instrumentality"
+	],
+	"copyright": "Copyright © 2026, Icosahedron Instrumentality",
+	"license": "ISC",
+	"name": "bismuth-linux"
+}
