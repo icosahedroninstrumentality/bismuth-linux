@@ -5,11 +5,11 @@ import std.math;
 
 public struct Glass {
 	Shape shape;
-	Color transmission = Color.one;
-	Color reflection = Color.one;
-	Color emission = Color.one;
-	Color shine = Color.one;
 	Vector shineAngle = 0;
+	Color transmission = Color(0.95, 0.96, 0.97, 1.0);
+	Color reflection = Color(0.35, 0.36, 0.37, 1.0);
+	Color emission = Color(0.01, 0.02, 0.03, 1.0);
+	Color shine = Color(0.51, 0.52, 0.53, 1.0);
 }
 
 public void drawGlass (

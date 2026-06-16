@@ -112,36 +112,6 @@ public void runVideo () {
 				Vector2(600, 40),
 				Vector2(30, 30),
 			),
-			Color(0.95, 0.96, 0.97, 1.0),
-			Color(0.95, 0.96, 0.97, 1.0),
-			Color(0.01, 0.02, 0.03, 1.0),
-			Color(0.50, 0.50, 0.50, 1.0),
-			alpha,
-		), Texture.screen, Texture.screen);
-
-		drawGlass(Glass(
-			Shape(
-				Vector2(x, height - y),
-				Vector2(10, 10),
-				Vector2(10, 10),
-			),
-			Color(0.35, 0.36, 0.37, 1.0),
-			Color(0.35, 0.36, 0.37, 1.0),
-			Color(0.01, 0.02, 0.03, 1.0),
-			Color(0.35, 0.36, 0.37, 1.0),
-			alpha,
-		), Texture.screen, Texture.screen);
-
-		drawGlass(Glass(
-			Shape(
-				Vector2(x, height - y),
-				Vector2(5, 5),
-				Vector2(5, 5),
-			),
-			Color(0.95, 0.96, 0.97, 1.0),
-			Color(0.95, 0.96, 0.97, 1.0),
-			Color(0.21, 0.22, 0.23, 1.0),
-			Color(1.00, 1.00, 1.00, 1.0),
 			alpha,
 		), Texture.screen, Texture.screen);
 
@@ -151,11 +121,33 @@ public void runVideo () {
 				Vector2(150, 90),
 				Vector2(30, 30),
 			),
-			Color(0.95, 0.96, 0.97, 1.0),
-			Color(0.95, 0.96, 0.97, 1.0),
-			Color(0.01, 0.02, 0.03, 1.0),
-			Color(0.50, 0.50, 0.50, 1.0),
 			alpha,
+		), Texture.screen, Texture.screen);
+
+		drawGlass(Glass(
+			Shape(
+				Vector2(x, height - y),
+				Vector2(10, 10),
+				Vector2(10, 10),
+			),
+			alpha,
+			Color(0.35, 0.36, 0.37, 1.0),
+			Color(0.35, 0.36, 0.37, 1.0),
+			Color(0.01, 0.02, 0.03, 1.0),
+			Color(0.35, 0.36, 0.37, 1.0),
+		), Texture.screen, Texture.screen);
+
+		drawGlass(Glass(
+			Shape(
+				Vector2(x, height - y),
+				Vector2(5, 5),
+				Vector2(5, 5),
+			),
+			alpha,
+			Color(0.95, 0.96, 0.97, 1.0),
+			Color(0.95, 0.96, 0.97, 1.0),
+			Color(0.21, 0.22, 0.23, 1.0),
+			Color(1.00, 1.00, 1.00, 1.0),
 		), Texture.screen, Texture.screen);
 
 		drawCopy(CopyInstruction(
