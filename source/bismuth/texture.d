@@ -8,6 +8,7 @@ import bismuth.png_loader;
 
 public class Texture {
 	public __gshared Texture raw = null;
+	public __gshared Texture screen;
 
 	public __gshared bool floatRenderable;
 	public __gshared GLuint internalFormat;

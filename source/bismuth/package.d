@@ -78,9 +78,6 @@ public void runVideo () {
 	import std.math : PI;
 	Vector alpha = PI * 0.75;
 
-	a = new Texture(screenSize);
-	b = new Texture(screenSize);
-
 	// 6. Main loop
 	while (!glfwWindowShouldClose(window)) {
 		alpha += 0.01f;
@@ -88,11 +85,8 @@ public void runVideo () {
 		glfwGetFramebufferSize(window, &width, &height);
 		screenSize = Vector2(width, height);
 
-		if (a is null || a.size != screenSize) {
-			a = new Texture(screenSize);
-		}
-		if (b is null || b.size != screenSize) {
-			b = new Texture(screenSize);
+		if (Texture.screen is null || Texture.screen.size != screenSize) {
+			Texture.screen = new Texture(screenSize);
 		}
 		
 		glViewport(0, 0, width, height);
@@ -103,13 +97,13 @@ public void runVideo () {
 		double x, y;
 		glfwGetCursorPos(window, &x, &y);
 
-		a.clear();
+		Texture.screen.clear();
 
 		drawCopy(CopyInstruction(
 			Vector4(0, 0, wallpaper.size.x, wallpaper.size.y),
 			wallpaper,
 			Vector4(0, 0, screenSize.x, screenSize.y),
-			a,
+			Texture.screen,
 		));
 
 		drawGlass(Glass(
@@ -123,7 +117,7 @@ public void runVideo () {
 			Color(0.01, 0.02, 0.03, 1.0),
 			Color(0.50, 0.50, 0.50, 1.0),
 			alpha,
-		), a, a);
+		), Texture.screen, Texture.screen);
 
 		drawGlass(Glass(
 			Shape(
@@ -136,7 +130,7 @@ public void runVideo () {
 			Color(0.01, 0.02, 0.03, 1.0),
 			Color(0.35, 0.36, 0.37, 1.0),
 			alpha,
-		), a, a);
+		), Texture.screen, Texture.screen);
 
 		drawGlass(Glass(
 			Shape(
@@ -149,7 +143,7 @@ public void runVideo () {
 			Color(0.21, 0.22, 0.23, 1.0),
 			Color(1.00, 1.00, 1.00, 1.0),
 			alpha,
-		), a, a);
+		), Texture.screen, Texture.screen);
 
 		drawGlass(Glass(
 			Shape(
@@ -162,11 +156,11 @@ public void runVideo () {
 			Color(0.01, 0.02, 0.03, 1.0),
 			Color(0.50, 0.50, 0.50, 1.0),
 			alpha,
-		), a, a);
+		), Texture.screen, Texture.screen);
 
 		drawCopy(CopyInstruction(
 			Vector4(0, 0, screenSize.x, screenSize.y),
-			a,
+			Texture.screen,
 			Vector4(0, 0, screenSize.x, screenSize.y),
 			Texture.raw
 		));
