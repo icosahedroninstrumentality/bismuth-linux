@@ -20,15 +20,6 @@ public struct Surface {
 	Color emission;
 }
 
-public struct Glass {
-	Shape shape;
-	Color transmission = Color.one;
-	Color reflection = Color.one;
-	Color emission = Color.one;
-	Color shine = Color.one;
-	Vector shineAngle = 0;
-}
-
 
 
 public class Uniform (T) {

@@ -3,7 +3,20 @@ module bismuth.effect.glass;
 import bismuth;
 import std.math;
 
-public void drawGlass (Glass glass, Texture source, Texture target = Texture.raw) {
+public struct Glass {
+	Shape shape;
+	Color transmission = Color.one;
+	Color reflection = Color.one;
+	Color emission = Color.one;
+	Color shine = Color.one;
+	Vector shineAngle = 0;
+}
+
+public void drawGlass (
+	Glass glass,
+	Texture source = Texture.screen,
+	Texture target = Texture.screen
+) {
 	Vector4 region = Vector4(
 		glass.shape.position.x - glass.shape.size.x,
 		glass.shape.position.y - glass.shape.size.y,
