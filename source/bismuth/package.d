@@ -153,9 +153,9 @@ public void runVideo () {
 
 		drawGlass(Glass(
 			Shape(
-				Vector2(width - 110, height - 60),
-				Vector2(100, 50),
-				Vector2(20, 20),
+				Vector2(width - 165, height - 105),
+				Vector2(150, 90),
+				Vector2(30, 30),
 			),
 			Color(0.95, 0.96, 0.97, 1.0),
 			Color(0.95, 0.96, 0.97, 1.0),
