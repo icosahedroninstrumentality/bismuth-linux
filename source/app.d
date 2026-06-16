@@ -1,4 +1,10 @@
+import core.thread;
+
+import bismuth;
+import audio;
+import prototypes;
 import std.stdio;
 
-void main () {
+void main() {
+	new Thread(() => runVideo()).start();
 }

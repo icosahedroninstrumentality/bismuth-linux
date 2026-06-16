@@ -1,12 +1,24 @@
 {
-	"description": "Bismuth graphics service for Linux",
-	"dependencies": {
-		"bindbc-opengl": "~>1.1.1"
-	},
 	"authors": [
 		"Icosahedron Instrumentality"
 	],
-	"copyright": "Copyright © 2026, Icosahedron Instrumentality",
+	"versions": [
+		"GL_41",
+		"SDL2020"
+	],
 	"license": "ISC",
-	"name": "bismuth-linux"
+	"copyright": "Copyright © 2026, Icosahedron Instrumentality",
+	"name": "bismuth-linux",
+	"libs": [
+		"opengl",
+		"glfw"
+	],
+	"description": "Bismuth graphics service for Linux",
+	"dependencies": {
+		"bindbc-opengl": "~>1.1.1",
+		"glfw-d": "~>1.1.2"
+	},
+	"preBuildCommands": ["gcc -c stb_impl.c -o stb_impl.o"],
+	"sourceFiles": ["stb_impl.o"],
+	"libraries": ["m"]
 }
