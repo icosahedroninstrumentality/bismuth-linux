@@ -53,7 +53,8 @@ public class Uniform (T) {
 		else static if (is(T == Texture)) {
 			glActiveTexture(GL_TEXTURE0 + *texUnit);
 			glBindTexture(GL_TEXTURE_2D, cache.id);
-			glUniform1i(location, *texUnit++);
+			glUniform1i(location, *texUnit);
+			(*texUnit)++;
 		}
 	}
 }

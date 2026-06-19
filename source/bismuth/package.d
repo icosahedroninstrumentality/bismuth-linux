@@ -10,8 +10,9 @@ import std.algorithm;
 public import vector;
 public import bismuth.texture;
 public import bismuth.shader;
-public import bismuth.effect.glass;
 public import bismuth.effect.copy;
+public import bismuth.effect.glass;
+public import bismuth.effect.glass_stroke;
 
 
 
@@ -66,8 +67,9 @@ public void runVideo () {
 
 	glGenFramebuffers(1, &fb);
 
-	initGlass();
 	initCopy();
+	initGlass();
+	initGlassStroke();
 
 	int width, height;
 	glfwGetFramebufferSize(window, &width, &height);
@@ -96,6 +98,7 @@ public void runVideo () {
 
 		double x, y;
 		glfwGetCursorPos(window, &x, &y);
+		y = screenSize.y - y;
 
 		Texture.screen.clear();
 
@@ -105,6 +108,63 @@ public void runVideo () {
 			Vector4(0, 0, screenSize.x, screenSize.y),
 			Texture.screen,
 		));
+
+		Vector size = 500;
+
+		drawGlassStroke(
+			GlassStroke(
+				([
+					CubicBezier(
+					    Vector2(x - size * 0.2222, y + size * 0.0),
+					    Vector2(x + size * 0.2222, y + size * 0.2222),
+					    Vector2(x + size * 0.6667, y + size * 0.8889),
+					    Vector2(x + size * 0.4444, y + size * 0.8889),
+					),
+					CubicBezier(
+					    Vector2(x + size * 0.4444, y + size * 0.8889),
+					    Vector2(x + size * 0.2222, y + size * 0.8889),
+					    Vector2(x + size * 0.2222, y + size * 0.0),
+					    Vector2(x + size * 0.2222, y + size * 0.0),
+					),
+					CubicBezier(
+					    Vector2(x + size * 0.2222, y + size * 0.0),
+					    Vector2(x + size * 0.3333, y + size * 0.4444),
+					    Vector2(x + size * 0.5556, y + size * 0.4444),
+					    Vector2(x + size * 0.5556, y + size * 0.2222),
+					),
+					CubicBezier(
+					    Vector2(x + size * 0.5556, y + size * 0.2222),
+					    Vector2(x + size * 0.5556, y + size * 0.1111),
+					    Vector2(x + size * 0.5556, y + size * 0.0),
+					    Vector2(x + size * 0.6667, y + size * 0.0),
+					),
+					CubicBezier(
+					    Vector2(x + size * 0.6667, y + size * 0.0),
+					    Vector2(x + size * 0.7778, y + size * 0.0),
+					    Vector2(x + size * 0.8889, y + size * 0.4444),
+					    Vector2(x + size * 0.8889, y + size * 0.4444),
+					),
+					CubicBezier(
+					    Vector2(x + size * 0.8889, y + size * 0.4444),
+					    Vector2(x + size * 0.8889, y + size * 0.2222),
+					    Vector2(x + size * 1.0, y + size * 0.0),
+					    Vector2(x + size * 1.0, y + size * 0.0),
+					),
+					CubicBezier(
+					    Vector2(x + size * 1.0, y + size * 0.8889),
+					    Vector2(x + size * 1.0, y + size * 0.8889),
+					    Vector2(x + size * 1.0, y + size * 0.8889),
+					    Vector2(x + size * 1.0, y + size * 0.8889),
+					),
+				]),
+				32,
+				alpha,
+				Color(0.5, 0.5, 0.5, 1.0),
+				Color(0.57, 0.58, 0.59, 1.0),
+				Color(0.5, 0.5, 0.5, 1.0),
+				Color(0.76, 0.70, 0.32, 1.0),
+			), Texture.screen
+		);
 
 		drawGlass(Glass(
 			Shape(
@@ -126,7 +186,7 @@ public void runVideo () {
 
 		drawGlass(Glass(
 			Shape(
-				Vector2(x, height - y),
+				Vector2(x, y),
 				Vector2(10, 10),
 				Vector2(10, 10),
 			),
@@ -139,7 +199,7 @@ public void runVideo () {
 
 		drawGlass(Glass(
 			Shape(
-				Vector2(x, height - y),
+				Vector2(x, y),
 				Vector2(5, 5),
 				Vector2(5, 5),
 			),
