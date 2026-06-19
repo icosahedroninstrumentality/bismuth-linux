@@ -57,11 +57,6 @@ public void drawGlass (
 	uradius.set(glass.shape.radius);
 	upower.set((glass.shape.size * 2.0) / glass.shape.radius);
 	
-	uposition.set(glass.shape.position);
-	usize.set(glass.shape.size);
-	uradius.set(glass.shape.radius);
-	upower.set((glass.shape.size * 2.0) / glass.shape.radius);
-
 	ureflection.set(glass.reflection);
 	uemission.set(glass.emission);
 	utransmission.set(glass.transmission);
