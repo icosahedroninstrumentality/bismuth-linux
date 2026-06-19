@@ -191,9 +191,6 @@ public void initGlass () {
 	utransmission = shader.uniform!Vector4("transmission", Vector4.one);
 	ushine = shader.uniform!Vector4("shine", Vector4.one);
 
-	blur = new Texture(screenSize);
-	back = new Texture(screenSize);
-
 	ushineDir = shader.uniform!Vector2("shineDir", Vector2.zero);
 	upx = shader.uniform!Vector2("px", Vector2.zero);
 	ublur = shader.uniform!Texture("blur", blur);
