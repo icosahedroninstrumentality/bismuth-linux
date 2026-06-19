@@ -194,11 +194,27 @@ public struct Vector4 {
 		);
 	}
 
+	Vector4 opBinary (string op) (Vector2 rhs) {
+		return Vector4(
+			mixin("x " ~ op ~ " rhs.x"),
+			mixin("y " ~ op ~ " rhs.y"),
+			mixin("z " ~ op ~ " rhs.x"),
+			mixin("w " ~ op ~ " rhs.y"),
+		);
+	}
+
 	void opOpAssign (string op) (Vector4 rhs) {
 		mixin("x " ~ op ~ "= rhs.x;");
 		mixin("y " ~ op ~ "= rhs.y;");
 		mixin("z " ~ op ~ "= rhs.z;");
 		mixin("w " ~ op ~ "= rhs.w;");
+	}
+
+	void opOpAssign (string op) (Vector2 rhs) {
+		mixin("x " ~ op ~ "= rhs.x;");
+		mixin("y " ~ op ~ "= rhs.y;");
+		mixin("z " ~ op ~ "= rhs.x;");
+		mixin("w " ~ op ~ "= rhs.y;");
 	}
 
 	void opOpAssign (string op) (Vector scalar) {
