@@ -35,7 +35,7 @@ public void initCopy () {
 	shader = new Shader(`#version 330 core
 		precision highp float;
 		in vec2 uv;
-		out vec4 fragColor;
+		out vec4 finalColor;
 
 		uniform sampler2D uTexture;
 		uniform vec4 sourceRect;
@@ -43,7 +43,7 @@ public void initCopy () {
 
 		void main() {
 			vec2 texCoord = mix(sourceRect.xy, sourceRect.zw, (gl_FragCoord.xy - targetRect.xy) / targetRect.zw);
-			fragColor = texture(uTexture, texCoord);
+			finalColor = texture(uTexture, texCoord);
 		}
 	`);
 

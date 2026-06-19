@@ -11,6 +11,7 @@ public import vector;
 public import bismuth.texture;
 public import bismuth.shader;
 public import bismuth.effect.copy;
+public import bismuth.effect.blur;
 public import bismuth.effect.glass;
 public import bismuth.effect.glass_stroke;
 
@@ -68,6 +69,7 @@ public void runVideo () {
 	glGenFramebuffers(1, &fb);
 
 	initCopy();
+	initBlur();
 	initGlass();
 	initGlassStroke();
 
@@ -75,7 +77,7 @@ public void runVideo () {
 	glfwGetFramebufferSize(window, &width, &height);
 	screenSize = Vector2(width, height);
 
-	wallpaper = Texture.loadFile("resources/Wallpaper/Ky/1.png");
+	wallpaper = Texture.loadFile("resources/Wallpaper/Ky/Ky_Sand.heic");
 
 	import std.math : PI;
 	Vector alpha = PI * 0.75;
@@ -102,12 +104,14 @@ public void runVideo () {
 
 		Texture.screen.clear();
 
-		drawCopy(CopyInstruction(
-			Vector4(0, 0, wallpaper.size.x, wallpaper.size.y),
-			wallpaper,
-			Vector4(0, 0, screenSize.x, screenSize.y),
-			Texture.screen,
-		));
+		auto s = max(screenSize.x / wallpaper.size.x, screenSize.y / wallpaper.size.y);
+		auto src = Vector4(
+			(wallpaper.size.x - screenSize.x / s) / 2,
+			(wallpaper.size.y - screenSize.y / s) / 2,
+			screenSize.x / s,
+			screenSize.y / s
+		);
+		drawCopy(CopyInstruction(src, wallpaper, Vector4(0, 0, screenSize.x, screenSize.y), Texture.screen));
 
 		Vector size = 500;
 
@@ -115,75 +119,73 @@ public void runVideo () {
 			GlassStroke(
 				([
 					CubicBezier(
-					    Vector2(x - size * 0.2222, y + size * 0.0),
-					    Vector2(x + size * 0.2222, y + size * 0.2222),
-					    Vector2(x + size * 0.6667, y + size * 0.8889),
-					    Vector2(x + size * 0.4444, y + size * 0.8889),
+					    Vector2(x - size * 0.2, y + size * 0.0),
+					    Vector2(x + size * 0.2, y + size * 0.2),
+					    Vector2(x + size * 0.7, y + size * 0.9),
+					    Vector2(x + size * 0.4, y + size * 0.9),
 					),
 					CubicBezier(
-					    Vector2(x + size * 0.4444, y + size * 0.8889),
-					    Vector2(x + size * 0.2222, y + size * 0.8889),
-					    Vector2(x + size * 0.2222, y + size * 0.0),
-					    Vector2(x + size * 0.2222, y + size * 0.0),
+					    Vector2(x + size * 0.4, y + size * 0.9),
+					    Vector2(x + size * 0.2, y + size * 0.9),
+					    Vector2(x + size * 0.2, y + size * 0.0),
+					    Vector2(x + size * 0.2, y + size * 0.0),
 					),
 					CubicBezier(
-					    Vector2(x + size * 0.2222, y + size * 0.0),
-					    Vector2(x + size * 0.3333, y + size * 0.4444),
-					    Vector2(x + size * 0.5556, y + size * 0.4444),
-					    Vector2(x + size * 0.5556, y + size * 0.2222),
+					    Vector2(x + size * 0.2, y + size * 0.0),
+					    Vector2(x + size * 0.3, y + size * 0.4),
+					    Vector2(x + size * 0.5, y + size * 0.4),
+					    Vector2(x + size * 0.5, y + size * 0.2),
 					),
 					CubicBezier(
-					    Vector2(x + size * 0.5556, y + size * 0.2222),
-					    Vector2(x + size * 0.5556, y + size * 0.1111),
-					    Vector2(x + size * 0.5556, y + size * 0.0),
-					    Vector2(x + size * 0.6667, y + size * 0.0),
+					    Vector2(x + size * 0.5, y + size * 0.2),
+					    Vector2(x + size * 0.5, y + size * 0.1),
+					    Vector2(x + size * 0.5, y + size * 0.0),
+					    Vector2(x + size * 0.6, y + size * 0.0),
 					),
 					CubicBezier(
-					    Vector2(x + size * 0.6667, y + size * 0.0),
-					    Vector2(x + size * 0.7778, y + size * 0.0),
-					    Vector2(x + size * 0.8889, y + size * 0.4444),
-					    Vector2(x + size * 0.8889, y + size * 0.4444),
+					    Vector2(x + size * 0.6, y + size * 0.0),
+					    Vector2(x + size * 0.7, y + size * 0.0),
+					    Vector2(x + size * 0.8, y + size * 0.4),
+					    Vector2(x + size * 0.8, y + size * 0.4),
 					),
 					CubicBezier(
-					    Vector2(x + size * 0.8889, y + size * 0.4444),
-					    Vector2(x + size * 0.8889, y + size * 0.2222),
+					    Vector2(x + size * 0.8, y + size * 0.4),
+					    Vector2(x + size * 0.8, y + size * 0.2),
+					    Vector2(x + size * 0.8, y + size * 0.0),
+					    Vector2(x + size * 0.9, y + size * 0.0),
+					),
+					CubicBezier(
+					    Vector2(x + size * 0.9, y + size * 0.0),
 					    Vector2(x + size * 1.0, y + size * 0.0),
-					    Vector2(x + size * 1.0, y + size * 0.0),
+					    Vector2(x + size * 1.1, y + size * 0.2),
+					    Vector2(x + size * 1.2, y + size * 0.4),
 					),
 					CubicBezier(
-					    Vector2(x + size * 1.0, y + size * 0.8889),
-					    Vector2(x + size * 1.0, y + size * 0.8889),
-					    Vector2(x + size * 1.0, y + size * 0.8889),
-					    Vector2(x + size * 1.0, y + size * 0.8889),
+					    Vector2(x + size * 0.85, y + size * 0.675),
+					    Vector2(x + size * 0.85, y + size * 0.675),
+					    Vector2(x + size * 0.85, y + size * 0.675),
+					    Vector2(x + size * 0.85, y + size * 0.675),
 					),
 				]),
-				32,
+				34,
 				alpha,
-				Color(0.5, 0.5, 0.5, 1.0),
+				Color(0.31, 0.32, 0.33, 1.0),
 				Color(0.57, 0.58, 0.59, 1.0),
 				Color(0.5, 0.5, 0.5, 1.0),
-				Color(0.76, 0.70, 0.32, 1.0),
 			), Texture.screen
 		);
 
+		// dock
 		drawGlass(Glass(
 			Shape(
-				Vector2(width / 2, 60),
+				Vector2(width / 2, 50),
 				Vector2(600, 40),
 				Vector2(30, 30),
 			),
 			alpha,
 		), Texture.screen, Texture.screen);
 
-		drawGlass(Glass(
-			Shape(
-				Vector2(width - 165, height - 105),
-				Vector2(150, 90),
-				Vector2(30, 30),
-			),
-			alpha,
-		), Texture.screen, Texture.screen);
-
+		// mouse
 		drawGlass(Glass(
 			Shape(
 				Vector2(x, y),
@@ -194,7 +196,6 @@ public void runVideo () {
 			Color(0.35, 0.36, 0.37, 1.0),
 			Color(0.35, 0.36, 0.37, 1.0),
 			Color(0.01, 0.02, 0.03, 1.0),
-			Color(0.35, 0.36, 0.37, 1.0),
 		), Texture.screen, Texture.screen);
 
 		drawGlass(Glass(
@@ -207,7 +208,6 @@ public void runVideo () {
 			Color(0.95, 0.96, 0.97, 1.0),
 			Color(0.95, 0.96, 0.97, 1.0),
 			Color(0.21, 0.22, 0.23, 1.0),
-			Color(1.00, 1.00, 1.00, 1.0),
 		), Texture.screen, Texture.screen);
 
 		drawCopy(CopyInstruction(

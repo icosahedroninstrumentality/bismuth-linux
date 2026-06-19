@@ -2,9 +2,7 @@ module bismuth.texture;
 
 import bindbc.opengl;
 import bismuth;
-import std.string : toStringz;
-
-import bismuth.png_loader;
+import std.string;
 
 public class Texture {
 	public __gshared Texture raw = null;
@@ -52,28 +50,34 @@ public class Texture {
 		fill(Vector4(0, 0, 0, 0));
 	}
 
-	public static Texture loadFile (string fileName) {
-		int width = 0;
-		int height = 0;
-		auto pixels = loadPNG(toStringz(fileName), width, height);
-		if (!pixels.length || width <= 0 || height <= 0) {
-			throw new Error("Failed to load texture file: " ~ fileName);
+	import bismuth.png_loader;
+	import bismuth.heic_loader;
+	import std.path : extension;
+
+	public static Texture loadFile(string fileName) {
+		int width, height;
+		ubyte[] pixels;
+		auto ext = extension(fileName).toLower();
+
+		if (ext == ".heic" || ext == ".heif") {
+			pixels = loadHEIC(fileName, width, height);
+		} else if (ext == ".png") {
+			pixels = loadPNG(fileName.toStringz, width, height);
+		} else {
+			throw new Exception("Unsupported format: " ~ ext);
 		}
 
+		if (!pixels.length || width <= 0 || height <= 0)
+			throw new Error("Failed to load texture file: " ~ fileName);
+
+		// Create and upload texture (same as before)
 		Texture texture = new Texture(Vector2(width, height));
 		glBindTexture(GL_TEXTURE_2D, texture.id);
-		glTexImage2D(
-			GL_TEXTURE_2D,
-			0,
-			GL_RGBA8,
-			cast (GLsizei) width,
-			cast (GLsizei) height,
-			0,
-			GL_RGBA,
-			GL_UNSIGNED_BYTE,
-			pixels.ptr
-		);
-		freePNGData(pixels);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
+					 cast(GLsizei)width, cast(GLsizei)height,
+					 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.ptr);
+		if (ext == ".png") freePNGData(pixels); // if PNG loader uses its own free
+		// For HEIC, the array is managed by GC; no extra free needed
 		return texture;
 	}
 	

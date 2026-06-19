@@ -14,15 +14,17 @@ public struct GlassStroke {
 	CubicBezier[] beziers;
 	float radius;
 	Vector shineAngle = 0;
-	Color transmission = Color(0.95, 0.96, 0.97, 1.0);
-	Color reflection = Color(0.35, 0.36, 0.37, 1.0);
+	Color transmission = Color(0.85, 0.86, 0.87, 1.0);
+	Color reflection = Color(0.55, 0.56, 0.57, 1.0);
 	Color emission = Color(0.01, 0.02, 0.03, 1.0);
-	Color shine = Color(0.51, 0.52, 0.53, 1.0);
+	Color shine = Vector4.one;//Color(0.51, 0.52, 0.53, 1.0);
+	Vector refractivity = 1.0;
+	Vector reflectivity = 2.0;
 }
 
 public void drawGlassStroke (
 	GlassStroke glass,
-	Texture source,
+	Texture source = Texture.screen,
 	Texture target = Texture.screen
 ) {
 	Vector4 region = Vector4(float.infinity, float.infinity, -float.infinity, -float.infinity);
@@ -96,10 +98,13 @@ public void drawGlassStroke (
 	utransmission.set(glass.transmission);
 	ushine.set(glass.shine);
 
-	Vector2 shineDir = Vector2(cos(glass.shineAngle), sin(glass.shineAngle)).normalize();
+	urefractivity.set(glass.refractivity);
+	ureflectivity.set(glass.reflectivity);
+
+	Vector2 shineDir = Vector2(sin(glass.shineAngle), cos(glass.shineAngle)).normalize();
 	if (shineDir.length == 0) shineDir = Vector2.one;
 	ushineDir.set(shineDir);
-	upx.set(Vector2(1, 1) / screenSize);
+	upx.set(Vector2(1, 1.0) / screenSize);
 	
 	shader.draw(
 		target,
@@ -111,12 +116,15 @@ private Shader shader;
 
 private Uniform!(Vector2[]) upositions;
 private Uniform!int ucount;
-private Uniform!float uradius;
+private Uniform!Vector uradius;
 
 private Uniform!Vector4 ureflection;
 private Uniform!Vector4 uemission;
 private Uniform!Vector4 utransmission;
 private Uniform!Vector4 ushine;
+
+private Uniform!Vector urefractivity;
+private Uniform!Vector ureflectivity;
 
 private Uniform!Vector2 ushineDir;
 private Uniform!Vector2 upx;
@@ -145,6 +153,9 @@ public void initGlassStroke () {
 	uniform vec4 transmission;
 	uniform vec4 shine;
 	
+	uniform float refractivity;
+	uniform float reflectivity;
+
 	uniform vec2 shineDir = vec2(1.0, 1.0);
 
 	uniform vec2 px;
@@ -194,7 +205,7 @@ float distance(vec2 Q, vec2 p0, vec2 p1, vec2 p2, vec2 p3) {
     float best_t = 0.0;
     float best_d2 = 1e20;
 
-    // ---- 1) Coarse‑to‑fine hierarchical search ----
+    // ---- 1.0) Coarse‑to‑fine hierarchical search ----
     for (int level = 0; level < SUBDIV_LEVELS; ++level) {
         float span = t_high - t_low;
         float local_best_t = t_low;
@@ -258,14 +269,15 @@ float distance(vec2 Q, vec2 p0, vec2 p1, vec2 p2, vec2 p3) {
 }
 
 float smin(float a, float b, float k) {
+	if (a * b == 0.0) return 0.0;
     float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
     return mix(b, a, h);
 }
 
 
-float calculateInside(vec2 Sposition) {
-	float minDist = 2.0; // initial sentinel
-    float k = 3.0 / radius; // smoothing radius as requested
+float calculateD(vec2 Sposition) {
+	float minDist = 1e10; // initial sentinel
+    float k = 0.1;
 
     // Loop over all segments
     for (int i = 0; i < 1023; i++) {
@@ -276,18 +288,30 @@ float calculateInside(vec2 Sposition) {
 			beziers[i * 4 + 1],
 			beziers[i * 4 + 2],
 			beziers[i * 4 + 3]
-		) / radius;
+		);
         // Replace hard min with smooth min
-        minDist = smin(minDist, d, k);
+        minDist = min(minDist, d);
     }
 
     // Degenerate case: only one point
-    if (count == 1) {
-        minDist = distance(Sposition, beziers[0], beziers[1], beziers[2], beziers[3]) / radius;
+    if (count == 1.0) {
+        minDist = distance(Sposition, beziers[0], beziers[1], beziers[2], beziers[3]);
     }
 
     return minDist;
 	};
+
+	float calculateInside (vec2 Sposition) {
+		return pow(calculateD(Sposition) / radius, 2.0);
+	}
+
+	float calculateMaskB (vec2 Sposition) {
+		return 1.0 - min(1.0, pow(pow(calculateD(Sposition) / (radius - 1.0), 2.0), 0.5 * (radius - 1.0)));
+	}
+
+	float calculateInsideS (vec2 Sposition) {
+		return min(1.0, pow(calculateD(Sposition) / (radius - 2.0), 2.0));
+	}
 
 	void main() {
 		vec4 refracted = vec4(0.0);
@@ -305,8 +329,8 @@ float calculateInside(vec2 Sposition) {
 		vec2 grad = vec2(inside.x - inside.z, inside.y - inside.z);
 		vec2 dir_ = normalize(grad + 1e-5);
 
-		vec2 offsetR = dir_ * pow(      inside.z, 3.14) * px * 1.14473 * radius * 1.0;
-		vec2 offsetL = dir_ * pow(1.0 - inside.z, 3.14) * px * 1.14473 * radius * 2.0;
+		vec2 offsetR = dir_ * pow(      inside.z, 2.0) * px * radius * refractivity;
+		vec2 offsetL = dir_ * pow(1.0 - inside.z, 2.0) * px * radius * reflectivity;
 
 		refracted.r = texture(blur, uv - offsetR).r;
 		refracted.g = texture(blur, uv - offsetR * 0.9).g;
@@ -314,21 +338,26 @@ float calculateInside(vec2 Sposition) {
 
 		refracted.a = 1.0;
 
-		reflected.r = texture(blur, uv + 2.0 * offsetL).r;
-		reflected.g = texture(blur, uv + 2.0 * offsetL * 0.9).g;
-		reflected.b = texture(blur, uv + 2.0 * offsetL * 0.9 * 0.9).b;
+		reflected.r = texture(blur, uv + offsetL).r;
+		reflected.g = texture(blur, uv + offsetL * 0.9).g;
+		reflected.b = texture(blur, uv + offsetL * 0.9 * 0.9).b;
 
 		reflected.a = 1.0;
 
-		float streak = 2.0 * (0.5 - pow(abs(dot(dir_, shineDir)), 2.0));
-		float shineCurve = pow(inside.z, 0.25 * radius);
+		float streak = pow(abs(dot(dir_, shineDir)), 3.14);
+
+		float shineV = calculateInsideS(gl_FragCoord.xy);
+		float shineMask =      2.0 * min(1.0, pow(shineV, (radius - 2.0) * 0.5));
+		float reflectionMask = pow(inside.z, 2.0);
 
 		finalColor = mix(
 			texture(back, uv),
-			refracted * transmission
-			+ reflected * pow(inside.z, radius * 0.125) * reflection
-			+ emission
-			+ shine * streak * shineCurve,
+			(
+				refracted * transmission
+				+ reflected * reflection * reflectionMask
+				+ emission
+				+ shine * streak * shineMask
+			) * calculateMaskB(gl_FragCoord.xy),
 			mask
 		);
 	}
@@ -336,12 +365,15 @@ float calculateInside(vec2 Sposition) {
 
 	upositions = shader.uniform!(Vector2[])("beziers", []);
 	ucount = shader.uniform!int("count", 0);
-	uradius = shader.uniform!float("radius", 0);
+	uradius = shader.uniform!Vector("radius", 0);
 
 	ureflection = shader.uniform!Vector4("reflection", Vector4.one);
 	uemission = shader.uniform!Vector4("emission", Vector4.one);
 	utransmission = shader.uniform!Vector4("transmission", Vector4.one);
 	ushine = shader.uniform!Vector4("shine", Vector4.one);
+
+	urefractivity = shader.uniform!Vector("refractivity", 0.0);
+	ureflectivity = shader.uniform!Vector("reflectivity", 0.0);
 
 	ushineDir = shader.uniform!Vector2("shineDir", Vector2.zero);
 	upx = shader.uniform!Vector2("px", Vector2.zero);
