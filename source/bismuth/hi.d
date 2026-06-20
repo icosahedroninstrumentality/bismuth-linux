@@ -66,4 +66,4 @@ void drawHi (Vector2 position, Vector alpha) {
 			4.0
 		), Texture.screen
 	);
-};
+}
