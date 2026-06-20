@@ -30,7 +30,7 @@ public struct BlurInstruction {
 private void drawBlur_ (BlurInstruction instruction) {
 	uTexture.set(instruction.source);
 	int samples = instruction.samples;
-	if (samples == 0) samples = cast (int) (max(1, ceil(instruction.radius * 0.25)) * 2);
+	if (samples == 0) samples = cast (int) min(maxBlurSamples, max(1, ceil(instruction.radius * 0.25)) * 2);
 	
 	// Convert sourceRect from pixel coordinates to normalized texture coordinates
 	Vector2 sourceSize = instruction.source.size;
@@ -60,6 +60,8 @@ public void drawBlur (BlurInstruction instruction) {
 	drawBlur_(BlurInstruction(instruction.sourceRect, b, instruction.targetRect, instruction.target, instruction.radius, PI * 0.666));
 }
 
+enum int maxBlurSamples = 32;
+
 public void initBlur () {
 	shader = new Shader(`#version 330 core
 		precision highp float;
@@ -75,7 +77,7 @@ public void initBlur () {
 		uniform vec2 angle;
 		uniform int samples;
 
-		#define MAX_SAMPLES 256
+		#define MAX_SAMPLES 64
 
 		void main() {
 			vec2 texCoord = mix(sourceRect.xy, sourceRect.zw, (gl_FragCoord.xy - targetRect.xy) / targetRect.zw);
