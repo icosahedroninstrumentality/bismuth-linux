@@ -6,6 +6,7 @@ import std.math;
 public struct Glass {
 	Shape shape;
 	Vector shineAngle = 0;
+	Vector blur = 0.0;
 	Color transmission = Color(0.85, 0.86, 0.87, 1.0);
 	Color reflection = Color(0.55, 0.56, 0.57, 1.0);
 	Color emission = Color(0.01, 0.02, 0.03, 1.0);
@@ -34,22 +35,15 @@ public void drawGlass (
 	); // Add padding to ensure blur covers edges
 
 	// Ensure temporary textures match current screen size (lazy init / resize)
-	if (back is null || back.size != screenSize) {
-		back = new Texture(screenSize);
+	if (back is null || back.size != screenSize) back = new Texture(screenSize);
+	if (blur is null || blur.size != screenSize) blur = new Texture(screenSize);
+	
+	drawCopy(CopyInstruction(paddedRegion, source, paddedRegion, back));
+	if (glass.blur == 0) {
+		drawCopy(CopyInstruction(paddedRegion, source, paddedRegion, blur));
+	} else {
+		drawBlur(BlurInstruction(paddedRegion, source, paddedRegion, blur, glass.blur));
 	}
-	if (blur is null || blur.size != screenSize) {
-		blur = new Texture(screenSize);
-	}
-
-	drawCopy(CopyInstruction(
-		paddedRegion, source,
-		paddedRegion, back,
-	));
-
-	drawCopy(CopyInstruction(
-		paddedRegion, source,
-		paddedRegion, blur,
-	));
 
 	uback.set(back);
 	ublur.set(blur);

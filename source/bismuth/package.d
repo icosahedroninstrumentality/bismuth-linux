@@ -7,13 +7,13 @@ import std.array;
 import std.conv;
 import std.algorithm;
 
-public import vector;
 public import bismuth.texture;
 public import bismuth.shader;
 public import bismuth.effect.copy;
 public import bismuth.effect.blur;
 public import bismuth.effect.glass;
 public import bismuth.effect.glass_stroke;
+public import bismuth.effect.shape;
 
 
 
@@ -72,12 +72,13 @@ public void runVideo () {
 	initBlur();
 	initGlass();
 	initGlassStroke();
+	initShape();
 
 	int width, height;
 	glfwGetFramebufferSize(window, &width, &height);
 	screenSize = Vector2(width, height);
 
-	wallpaper = Texture.loadFile("resources/Wallpaper/Ky/Ky_Sand.heic");
+	wallpaper = Texture.loadFile("resources/Wallpaper/Ky/Ky_DunesWandering.heic");
 
 	import std.math : PI;
 	Vector alpha = PI * 0.75;
@@ -113,7 +114,7 @@ public void runVideo () {
 		);
 		drawCopy(CopyInstruction(src, wallpaper, Vector4(0, 0, screenSize.x, screenSize.y), Texture.screen));
 
-		Vector size = 500;
+		Vector size = 300;
 
 		drawGlassStroke(
 			GlassStroke(
@@ -167,11 +168,14 @@ public void runVideo () {
 					    Vector2(x + size * 0.85, y + size * 0.675),
 					),
 				]),
-				34,
+				18,
 				alpha,
-				Color(0.31, 0.32, 0.33, 1.0),
-				Color(0.57, 0.58, 0.59, 1.0),
+				8,
+				Color(0.51, 0.52, 0.53, 1.0),
+				Color(0.27, 0.28, 0.29, 1.0),
 				Color(0.5, 0.5, 0.5, 1.0),
+				Vector4.one,
+				4.0
 			), Texture.screen
 		);
 
@@ -183,6 +187,7 @@ public void runVideo () {
 				Vector2(30, 30),
 			),
 			alpha,
+			8.0,
 		), Texture.screen, Texture.screen);
 
 		// mouse
@@ -193,6 +198,7 @@ public void runVideo () {
 				Vector2(10, 10),
 			),
 			alpha,
+			0.0,
 			Color(0.35, 0.36, 0.37, 1.0),
 			Color(0.35, 0.36, 0.37, 1.0),
 			Color(0.01, 0.02, 0.03, 1.0),
@@ -205,6 +211,7 @@ public void runVideo () {
 				Vector2(5, 5),
 			),
 			alpha,
+			0.0,
 			Color(0.95, 0.96, 0.97, 1.0),
 			Color(0.95, 0.96, 0.97, 1.0),
 			Color(0.21, 0.22, 0.23, 1.0),

@@ -3,7 +3,7 @@ module bismuth.shader;
 import bindbc.opengl;
 import std.stdio;
 import bismuth;
-
+public import vector;
 
 
 public struct Shape {
@@ -14,10 +14,23 @@ public struct Shape {
 
 public alias Color = Vector4;
 
+public struct Outline {
+	Vector width;
+	Color color;
+}
+
+public struct Border {
+	Vector width;
+	Color color;
+}
+
 public struct Surface {
 	Shape shape;
 	Color albedo;
 	Color emission;
+	//Outline[] outlines;
+	//Border[] borders;
+	Border border;
 }
 
 
