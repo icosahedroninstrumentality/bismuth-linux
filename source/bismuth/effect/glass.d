@@ -183,7 +183,7 @@ public void initGlass () {
 		float streak = pow(abs(dot(dir_, shineDir)), 3.14);
 
 		float shineV = calculateInsideS(gl_FragCoord.xy);
-		float shineMask =      2.0 * min(1.0, pow(shineV, (minRadius - 2.0) * 0.5));
+		float shineMask = 2.0 * min(1.0, pow(shineV, (minRadius - 2.0) * 0.5));
 		float reflectionMask = pow(inside.z, 2.0);
 
 		finalColor = mix(
