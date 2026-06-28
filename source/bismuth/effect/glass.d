@@ -165,8 +165,8 @@ public void initGlass () {
 		vec2 grad = vec2(inside.x - inside.z, inside.y - inside.z);
 		vec2 dir_ = normalize(grad + 1e-5);
 
-		vec2 offsetR = dir_ * pow(      inside.z, 2.0) * px * minRadius * refractivity;
-		vec2 offsetL = dir_ * pow(1.0 - inside.z, 2.0) * px * minRadius * reflectivity;
+		vec2 offsetR = dir_ * pow(inside.z, 2.0)         * px * minRadius * refractivity;
+		vec2 offsetL = dir_ * (1.0 - pow(inside.z, 2.0)) * px * minRadius * reflectivity;
 
 		refracted.r = texture(blur, uv - offsetR).r;
 		refracted.g = texture(blur, uv - offsetR * 0.9).g;
