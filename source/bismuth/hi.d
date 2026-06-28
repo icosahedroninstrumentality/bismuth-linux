@@ -3,7 +3,7 @@ module bismuth.hi;
 import bismuth;
 
 void drawHi (Vector2 position, Vector alpha) {
-	Vector size = 300;
+	Vector size = 500;
 	drawGlassStroke(
 		GlassStroke(
 			([
@@ -56,7 +56,7 @@ void drawHi (Vector2 position, Vector alpha) {
 					Vector2(position.x + size * 0.85, position.y + size * 0.675),
 				),
 			]),
-			18,
+			30,
 			alpha,
 			8,
 			Color(0.51, 0.52, 0.53, 1.0),
