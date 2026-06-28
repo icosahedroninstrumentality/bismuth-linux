@@ -15,12 +15,12 @@ public struct GlassStroke {
 	float radius;
 	Vector shineAngle = 0;
 	Vector blur = 0.0;
-	Color transmission = Color(0.85, 0.86, 0.87, 1.0);
-	Color reflection = Color(0.55, 0.56, 0.57, 1.0);
+	Color transmission = Color(0.75, 0.76, 0.77, 1.0);
+	Color reflection = Color(0.75, 0.76, 0.77, 1.0);
 	Color emission = Color(0.01, 0.02, 0.03, 1.0);
 	Color shine = Vector4.one;//Color(0.51, 0.52, 0.53, 1.0);
 	Vector refractivity = 1.0;
-	Vector reflectivity = 2.0;
+	Vector reflectivity = 1.0;
 }
 
 public void drawGlassStroke (
