@@ -113,6 +113,7 @@ public void runVideo () {
 			screenSize.y / s
 		);
 		drawCopy(CopyInstruction(src, wallpaper, Vector4(0, 0, screenSize.x, screenSize.y), Texture.screen));
+		//Texture.screen.fill(Vector4(0.5, 0.5, 0.5, 0.5));
 
 		// dock
 		drawGlass(Glass(
@@ -124,6 +125,9 @@ public void runVideo () {
 			alpha,
 			8.0,
 		), Texture.screen, Texture.screen);
+
+		import bismuth.hi;
+		drawHi(Vector2(x,y),alpha);
 
 		// mouse
 		drawGlass(Glass(
@@ -151,6 +155,12 @@ public void runVideo () {
 			Color(0.95, 0.96, 0.97, 1.0),
 			Color(0.21, 0.22, 0.23, 1.0),
 		), Texture.screen, Texture.screen);
+
+		drawGlass(Glass(Shape(
+			Vector2(x, y - 150),
+			Vector2(250, 100),
+			Vector2(100, 100),
+		), alpha));
 
 		drawCopy(CopyInstruction(
 			Vector4(0, 0, screenSize.x, screenSize.y),
