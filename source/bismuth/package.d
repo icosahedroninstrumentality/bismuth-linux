@@ -123,7 +123,7 @@ public void runVideo () {
 				Vector2(30, 30),
 			),
 			alpha,
-			8.0,
+			4.0,
 		), Texture.screen, Texture.screen);
 
 		import bismuth.hi;
