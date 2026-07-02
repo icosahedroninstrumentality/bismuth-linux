@@ -5,6 +5,7 @@ import std.math;
 
 public struct Glass {
 	Shape shape;
+	Vector angle = 0.0;
 	Vector shineAngle = 0;
 	Vector blur = 0.0;
 	Color transmission = Color(0.75, 0.76, 0.77, 1.0);
@@ -20,11 +21,13 @@ public void drawGlass (
 	Texture source = Texture.screen,
 	Texture target = Texture.screen
 ) {
+	import std.algorithm;
+	Vector maxSize = max(glass.shape.size.x, glass.shape.size.y);
 	Vector4 region = Vector4(
-		glass.shape.position.x - glass.shape.size.x,
-		glass.shape.position.y - glass.shape.size.y,
-		glass.shape.size.x * 2,
-		glass.shape.size.y * 2,
+		glass.shape.position.x - maxSize,
+		glass.shape.position.y - maxSize,
+		maxSize * 2,
+		maxSize * 2,
 	);
 
 	Vector4 paddedRegion = region + Vector4(
@@ -53,7 +56,6 @@ public void drawGlass (
 	uradius.set(glass.shape.radius);
 	upower.set((glass.shape.size * 2.0) / glass.shape.radius);
 
-	import std.algorithm;
 	Vector2 minRadiusSize = Vector2(
 		min(glass.shape.radius.x * 2.0, glass.shape.size.x),
 		min(glass.shape.radius.y * 2.0, glass.shape.size.y),
@@ -68,6 +70,7 @@ public void drawGlass (
 
 	urefractivity.set(glass.refractivity);
 	ureflectivity.set(glass.reflectivity);
+	uangle.set(glass.angle);
 
 	Vector2 shineDir = Vector2(sin(glass.shineAngle), cos(glass.shineAngle)).normalize();
 	if (shineDir.length == 0) shineDir = Vector2.one;
@@ -95,6 +98,7 @@ private Uniform!Vector4 ushine;
 
 private Uniform!Vector urefractivity;
 private Uniform!Vector ureflectivity;
+private Uniform!Vector uangle;
 
 private Uniform!Vector2 ushineDir;
 private Uniform!Vector2 upx;
@@ -116,6 +120,7 @@ public void initGlass () {
 	uniform vec2 radius;
 	uniform float minRadius;
 	uniform vec2 power;
+	uniform float angle;
 	
 	uniform vec4 reflection;
 	uniform vec4 emission;
@@ -133,19 +138,34 @@ public void initGlass () {
 	uniform sampler2D back;///min:l;mag:l;s:m;t:m;
 
 	float calculateInside (vec2 Sposition) {
-		vec2 d = pow(abs((Sposition - position) / size), power);
+		vec2 offset = Sposition - position;
+		float cosA = cos(angle);
+		float sinA = sin(angle);
+		vec2 rotatedOffset = vec2(offset.x * cosA - offset.y * sinA,
+						offset.x * sinA + offset.y * cosA);
+		vec2 d = pow(abs(rotatedOffset / size), power);
 		return d.x + d.y;
 	}
 
 	float calculateMaskB (vec2 Sposition) {
 		vec2 newPower = ((size - 1.0) * 2.0) / (radius - 1.0);
-		vec2 d = pow(abs((Sposition - position) / (size - 1.0)), newPower);
+		vec2 offset = Sposition - position;
+		float cosA = cos(angle);
+		float sinA = sin(angle);
+		vec2 rotatedOffset = vec2(offset.x * cosA - offset.y * sinA,
+						offset.x * sinA + offset.y * cosA);
+		vec2 d = pow(abs(rotatedOffset / (size - 1.0)), newPower);
 		return 1.0 - min(1.0, pow(d.x + d.y, 0.5 * (minRadius - 1.0)));
 	}
 
 	float calculateInsideS (vec2 Sposition) {
 		vec2 newPower = ((size - 2.0) * 2.0) / (radius - 2.0);
-		vec2 d = pow(abs((Sposition - position) / (size - 2.0)), newPower);
+		vec2 offset = Sposition - position;
+		float cosA = cos(angle);
+		float sinA = sin(angle);
+		vec2 rotatedOffset = vec2(offset.x * cosA - offset.y * sinA,
+						offset.x * sinA + offset.y * cosA);
+		vec2 d = pow(abs(rotatedOffset / (size - 2.0)), newPower);
 		return min(1.0, d.x + d.y);
 	}
 
@@ -212,6 +232,7 @@ public void initGlass () {
 
 	urefractivity = shader.uniform!Vector("refractivity", 0.0);
 	ureflectivity = shader.uniform!Vector("reflectivity", 0.0);
+	uangle = shader.uniform!Vector("angle", 0.0);
 
 	ushineDir = shader.uniform!Vector2("shineDir", Vector2.zero);
 	upx = shader.uniform!Vector2("px", Vector2.zero);
