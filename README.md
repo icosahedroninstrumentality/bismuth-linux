@@ -2,9 +2,11 @@
 
 This is a port of the Bismuth graphics service spec to Linux.
 
-Demo:
+Demos:
 
-![alt text](docs/demo.png)
+![Demo image](docs/demo.png)
+![Demo image (text)](docs/text.png)
+![Demo image (text other)](docs/text2.png)
 
 [ISC License](./LICENSE)
 

@@ -84,11 +84,11 @@ public void runVideo () {
 	screenSize = Vector2(width, height);
 
 	//wallpaper = Texture.loadFile("resources/Wallpaper/Ky/Ky_DunesWandering.heic");
-	wallpaper = Texture.loadFile("resources/Wallpaper/Ky/Ky_Sand.heic");
+	//wallpaper = Texture.loadFile("resources/Wallpaper/Ky/Ky_Sand.heic");
 	//wallpaper = Texture.loadFile("resources/Wallpaper/Ky/Ky_SunsetDune.heic");
 	//wallpaper = Texture.loadFile("resources/Wallpaper/Ky/Ky_GalacticDunes.heic");
 	//wallpaper = Texture.loadFile("resources/Wallpaper/Ky/Ky_SanLuis.heic");
-	//wallpaper = Texture.loadFile("resources/Wallpaper/Ky/Ky_TwilightDunes.heic");
+	wallpaper = Texture.loadFile("resources/Wallpaper/Ky/Ky_TwilightDunes.heic");
 
 	import std.math : PI;
 	Vector alpha = PI * 0.75;
