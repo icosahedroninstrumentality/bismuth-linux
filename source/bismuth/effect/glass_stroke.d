@@ -3,13 +3,6 @@ module bismuth.effect.glass_stroke;
 import bismuth;
 import std.math;
 
-public struct CubicBezier {
-	Vector2 p0;
-	Vector2 p1;
-	Vector2 p2;
-	Vector2 p3;
-}
-
 public struct GlassStroke {
 	CubicBezier[] beziers;
 	float radius;
@@ -186,7 +179,6 @@ public void initGlassStroke () {
 		float best_t = 0.0;
 		float best_d2 = 1e20;
 
-		// ---- 1.0) Coarse‑to‑fine hierarchical search ----
 		for (int level = 0; level < SUBDIV_LEVELS; ++level) {
 			float span = t_high - t_low;
 			float local_best_t = t_low;
@@ -215,7 +207,6 @@ public void initGlassStroke () {
 			t_high = min(1.0, local_best_t + half_width);
 		}
 
-		// ---- 2) Damped Newton refinement ----
 		float t = best_t;
 		const int ITER = 5;
 		for (int j = 0; j < ITER; ++j) {
@@ -234,11 +225,10 @@ public void initGlassStroke () {
 				t = t - step;
 				t = clamp(t, 0.0, 1.0);
 			} else {
-				break; // flat region – no reliable second derivative
+				break;
 			}
 		}
 
-		// ---- 3) Final distance (including endpoint check) ----
 		vec2 final_B = bezier_point(p0, p1, p2, p3, t);
 		float d2_final = dot(final_B - Q, final_B - Q);
 

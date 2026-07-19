@@ -13,7 +13,11 @@ public import bismuth.effect.copy;
 public import bismuth.effect.blur;
 public import bismuth.effect.glass;
 public import bismuth.effect.glass_stroke;
+public import bismuth.effect.stroke;
 public import bismuth.effect.shape;
+public import bismuth.text;
+public import bismuth.framework;
+public import prototypes;
 
 
 
@@ -71,6 +75,7 @@ public void runVideo () {
 	initCopy();
 	initBlur();
 	initGlass();
+	initStroke();
 	initGlassStroke();
 	initShape();
 
@@ -78,10 +83,17 @@ public void runVideo () {
 	glfwGetFramebufferSize(window, &width, &height);
 	screenSize = Vector2(width, height);
 
-	wallpaper = Texture.loadFile("resources/Wallpaper/Ky/Ky_DunesWandering.heic");
+	//wallpaper = Texture.loadFile("resources/Wallpaper/Ky/Ky_DunesWandering.heic");
+	wallpaper = Texture.loadFile("resources/Wallpaper/Ky/Ky_Sand.heic");
+	//wallpaper = Texture.loadFile("resources/Wallpaper/Ky/Ky_SunsetDune.heic");
+	//wallpaper = Texture.loadFile("resources/Wallpaper/Ky/Ky_GalacticDunes.heic");
+	//wallpaper = Texture.loadFile("resources/Wallpaper/Ky/Ky_SanLuis.heic");
+	//wallpaper = Texture.loadFile("resources/Wallpaper/Ky/Ky_TwilightDunes.heic");
 
 	import std.math : PI;
 	Vector alpha = PI * 0.75;
+
+	Font.setup();
 
 	// 6. Main loop
 	while (!glfwWindowShouldClose(window)) {
@@ -122,12 +134,9 @@ public void runVideo () {
 				Vector2(600, 40),
 				Vector2(30, 30),
 			),
-			alpha,
-			4.0,
+			0,
+			0,
 		), Texture.screen, Texture.screen);
-
-		import bismuth.hi;
-		drawHi(Vector2(x,y),alpha);
 
 		// mouse
 		drawGlass(Glass(
@@ -158,11 +167,17 @@ public void runVideo () {
 			Color(0.21, 0.22, 0.23, 1.0),
 		), Texture.screen, Texture.screen);
 
+		Font.paragraph.drawText("ABCDEFGHIJKLMNOPQRSTUVWXYZ", Vector2(32, screenSize.y - 128), 64, x / screenSize.x, y / screenSize.y, screenSize.x);
+		Font.paragraph.drawText("abcdefghijklmnopqrstuvwxyz", Vector2(32, screenSize.y - 256), 64, x / screenSize.x, y / screenSize.y, screenSize.x);
+		Font.paragraph.drawText("0123456789=+-*/|\\.:,;!?_\"'()[]{}<>", Vector2(32, screenSize.y - 384), 64, x / screenSize.x, y / screenSize.y, screenSize.x);
+		Font.paragraph.drawText("The quick brown fox jumped over the lazy dog.", Vector2(32, screenSize.y - 512), 64, x / screenSize.x, y / screenSize.y, screenSize.x);
+		Font.paragraph.drawText("This text is being rendered through Bismuth's new text pipeline!", Vector2(32, screenSize.y - 512-128), 64, x / screenSize.x, y / screenSize.y, screenSize.x);
+
 		drawGlass(Glass(Shape(
 			Vector2(x, y - 150),
 			Vector2(250, 100),
 			Vector2(100, 100),
-		), alpha));
+		), alpha, 0, 5));
 
 		drawCopy(CopyInstruction(
 			Vector4(0, 0, screenSize.x, screenSize.y),

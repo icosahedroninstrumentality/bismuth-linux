@@ -8,7 +8,7 @@ private Uniform!Vector4 uSourceRect;
 private Uniform!Vector4 uTargetRect;
 private Uniform!Vector uradius;
 private Uniform!Vector2 uangle;
-private Uniform!int usamples;
+private Uniform!Vector usamples;
 private Uniform!Vector2 upx;
 
 private Texture a;
@@ -44,7 +44,7 @@ private void drawBlur_ (BlurInstruction instruction) {
 	uTargetRect.set(instruction.targetRect);
 	uradius.set(instruction.radius);
 	uangle.set(Vector2(sin(instruction.angle), cos(instruction.angle)));
-	usamples.set(samples);
+	usamples.set(Vector(samples));
 	upx.set(Vector2(1.0, 1.0) / instruction.source.size);
 
 	shader.draw(instruction.target, instruction.targetRect);
@@ -75,7 +75,7 @@ public void initBlur () {
 		
 		uniform float radius;
 		uniform vec2 angle;
-		uniform int samples;
+		uniform float samples;
 
 		#define MAX_SAMPLES 64
 
@@ -83,18 +83,20 @@ public void initBlur () {
 			vec2 texCoord = mix(sourceRect.xy, sourceRect.zw, (gl_FragCoord.xy - targetRect.xy) / targetRect.zw);
 			vec4 blurred = vec4(0.0);
 
+			float s = 0.0;
 			for (int i = 0; i < MAX_SAMPLES; i++) {
-				if (i >= samples) break;
+				if (s >= samples) break;
 		
-				float t = (float(i) + 0.5) / float(samples);
+				float t = (s + 0.5) / samples;
 				float currentRadius = radius * (1.0 - t);
 				vec2 offset = angle * px * currentRadius;
 		
 				blurred += texture(uTexture, texCoord + offset);
 				blurred += texture(uTexture, texCoord - offset);
+				s++;
 			}
 		
-			finalColor = blurred / float(samples * 2);
+			finalColor = blurred / (samples * 2);
 		}
 	`);
 
@@ -103,6 +105,6 @@ public void initBlur () {
 	uTargetRect = shader.uniform!Vector4("targetRect", Vector4(0.0, 0.0, 1.0, 1.0));
 	uradius = shader.uniform!Vector("radius", 0);
 	uangle = shader.uniform!Vector2("angle", Vector2(0, 0));
-	usamples = shader.uniform!int("samples", 0);
+	usamples = shader.uniform!Vector("samples", 0);
 	upx = shader.uniform!Vector2("px", Vector2(0, 0));
 }
