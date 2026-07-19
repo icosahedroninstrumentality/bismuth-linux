@@ -188,15 +188,19 @@ public void initGlass () {
 		vec2 offsetR = dir_ * pow(inside.z, 2.0)         * px * minRadius * refractivity;
 		vec2 offsetL = dir_ * (1.0 - pow(inside.z, 2.0)) * px * minRadius * reflectivity;
 
+		vec2 abberation = max(vec2(0.5), 1.0 - 6.0 / radius);
+		vec2 abberationR = abberation / refractivity;
+		vec2 abberationL = abberation / reflectivity;
+
 		refracted.r = texture(blur, uv - offsetR).r;
-		refracted.g = texture(blur, uv - offsetR * 0.9).g;
-		refracted.b = texture(blur, uv - offsetR * 0.9 * 0.9).b;
+		refracted.g = texture(blur, uv - offsetR * abberationR).g;
+		refracted.b = texture(blur, uv - offsetR * abberationR * abberationR).b;
 
 		refracted.a = 1.0;
 
 		reflected.r = texture(blur, uv + offsetL).r;
-		reflected.g = texture(blur, uv + offsetL * 0.9).g;
-		reflected.b = texture(blur, uv + offsetL * 0.9 * 0.9).b;
+		reflected.g = texture(blur, uv + offsetL * abberationL).g;
+		reflected.b = texture(blur, uv + offsetL * abberationL * abberationL).b;
 
 		reflected.a = 1.0;
 
