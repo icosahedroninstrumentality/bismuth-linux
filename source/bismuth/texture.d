@@ -51,6 +51,7 @@ public class Texture {
 	}
 
 	import bismuth.png_loader;
+	import bismuth.jpg_loader;
 	import bismuth.heic_loader;
 	import std.path : extension;
 
@@ -63,6 +64,8 @@ public class Texture {
 			pixels = loadHEIC(fileName, width, height);
 		} else if (ext == ".png") {
 			pixels = loadPNG(fileName.toStringz, width, height);
+		} else if (ext == ".jpg" || ext == ".jpeg") {
+			pixels = loadJPG(fileName.toStringz, width, height);
 		} else {
 			throw new Exception("Unsupported format: " ~ ext);
 		}
@@ -76,7 +79,8 @@ public class Texture {
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
 					 cast(GLsizei)width, cast(GLsizei)height,
 					 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.ptr);
-		if (ext == ".png") freePNGData(pixels); // if PNG loader uses its own free
+		if (ext == ".png") freePNGData(pixels);
+		else if (ext == ".jpg" || ext == ".jpeg") freeJPGData(pixels);
 		// For HEIC, the array is managed by GC; no extra free needed
 		return texture;
 	}
