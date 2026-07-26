@@ -1,4 +1,4 @@
-module bismuth.png_loader;
+module bismuth.loaders.png;
 
 import core.stdc.stdio : fprintf, stderr;
 import core.stdc.stdlib : free;

@@ -1,4 +1,4 @@
-module bismuth.heic_loader;
+module bismuth.loaders.heic;
 
 import std.string : toStringz;
 import std.exception : enforce;

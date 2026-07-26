@@ -50,9 +50,9 @@ public class Texture {
 		fill(Vector4(0, 0, 0, 0));
 	}
 
-	import bismuth.png_loader;
-	import bismuth.jpg_loader;
-	import bismuth.heic_loader;
+	import bismuth.loaders.png;
+	import bismuth.loaders.jpg;
+	import bismuth.loaders.heic;
 	import std.path : extension;
 
 	public static Texture loadFile(string fileName) {
