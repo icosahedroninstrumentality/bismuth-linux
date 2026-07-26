@@ -32,9 +32,58 @@ bool supportedExtension (string extension) {
 	return extensions.canFind(extension);
 }
 
-public Texture wallpaper;
+public __gshared Texture[] wallpapers;
 public Texture a;
 public Texture b;
+
+ulong wallpaperSelection = 0;
+
+const wallpaperfiles = [
+	"resources/Wallpaper/Ky/Ky_DunesWandering.heic",
+	"resources/Wallpaper/Ky/Ky_Sand.heic",
+	"resources/Wallpaper/Ky/Ky_SunsetDune.heic",
+	"resources/Wallpaper/Ky/Ky_GalacticDunes.heic",
+	"resources/Wallpaper/Ky/Ky_SanLuis.heic",
+	"resources/Wallpaper/Ky/Ky_TwilightDunes.heic",
+	"resources/Wallpaper/Konu/IMG_8455.HEIC",
+	"resources/Wallpaper/Konu/IMG_8665.HEIC",
+	"resources/Wallpaper/Konu/IMG_8671.HEIC",
+	"resources/Wallpaper/Konu/IMG_8729.HEIC",
+	"resources/Wallpaper/Konu/IMG_8730.HEIC",
+	"resources/Wallpaper/Konu/IMG_8731.HEIC",
+	"resources/Wallpaper/Konu/IMG_8732.HEIC",
+	"resources/Wallpaper/Konu/IMG_8739.HEIC",
+	"resources/Wallpaper/Konu/IMG_8740.HEIC",
+	"resources/Wallpaper/Konu/IMG_8741.HEIC",
+	"resources/Wallpaper/Konu/IMG_8757.HEIC",
+	"resources/Wallpaper/Konu/IMG_8760.HEIC",
+	"resources/Wallpaper/Crystal/Black/image.jpg",
+	"resources/Wallpaper/Crystal/Green/image.jpg",
+	"resources/Wallpaper/Crystal/Pink/image.jpg",
+	"resources/Wallpaper/Crystal/Purple/image.jpg",
+	"resources/Wallpaper/Glass/Black/image.jpg",
+	"resources/Wallpaper/Glass/Color/image.jpg",
+	"resources/Wallpaper/Glass/White/image.jpg",
+	"resources/Wallpaper/Gold/Chunks/image.jpg",
+	"resources/Wallpaper/Gold/Flat/image.jpg",
+	"resources/Wallpaper/Gold/Rough/image.jpg",
+];
+
+// Define your callback
+extern(C) void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) nothrow @nogc {
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, GLFW_TRUE);
+    }
+	import std.math;
+	
+	if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
+        wallpaperSelection = (wallpaperSelection + 1) % wallpaperfiles.length;
+    }
+	if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) {
+        wallpaperSelection = min(wallpaperSelection - 1, wallpaperfiles.length - 1);
+    }
+    // Handle other keys...
+}
 
 public void runVideo () {
 	// 1. Initialize GLFW
@@ -83,20 +132,19 @@ public void runVideo () {
 	glfwGetFramebufferSize(window, &width, &height);
 	screenSize = Vector2(width, height);
 
-	//wallpaper = Texture.loadFile("resources/Wallpaper/Ky/Ky_DunesWandering.heic");
-	//wallpaper = Texture.loadFile("resources/Wallpaper/Ky/Ky_Sand.heic");
-	//wallpaper = Texture.loadFile("resources/Wallpaper/Ky/Ky_SunsetDune.heic");
-	//wallpaper = Texture.loadFile("resources/Wallpaper/Ky/Ky_GalacticDunes.heic");
-	//wallpaper = Texture.loadFile("resources/Wallpaper/Ky/Ky_SanLuis.heic");
-	wallpaper = Texture.loadFile("resources/Wallpaper/Ky/Ky_TwilightDunes.heic");
-
+	import core.thread;
+	
+	wallpapers.length = wallpaperfiles.length;
+	
 	import std.math : PI;
 	Vector alpha = PI * 0.75;
 
 	Font.setup();
 
 	// 6. Main loop
+	glfwSetKeyCallback(window, &keyCallback);
 	while (!glfwWindowShouldClose(window)) {
+		if (wallpapers[wallpaperSelection] is null) wallpapers[wallpaperSelection] = Texture.loadFile(wallpaperfiles[wallpaperSelection]);
 		alpha += 0.01f;
 
 		glfwGetFramebufferSize(window, &width, &height);
@@ -117,14 +165,14 @@ public void runVideo () {
 
 		Texture.screen.clear();
 
-		auto s = max(screenSize.x / wallpaper.size.x, screenSize.y / wallpaper.size.y);
+		auto s = max(screenSize.x / wallpapers[wallpaperSelection].size.x, screenSize.y / wallpapers[wallpaperSelection].size.y);
 		auto src = Vector4(
-			(wallpaper.size.x - screenSize.x / s) / 2,
-			(wallpaper.size.y - screenSize.y / s) / 2,
+			(wallpapers[wallpaperSelection].size.x - screenSize.x / s) / 2,
+			(wallpapers[wallpaperSelection].size.y - screenSize.y / s) / 2,
 			screenSize.x / s,
 			screenSize.y / s
 		);
-		drawCopy(CopyInstruction(src, wallpaper, Vector4(0, 0, screenSize.x, screenSize.y), Texture.screen));
+		drawCopy(CopyInstruction(src, wallpapers[wallpaperSelection], Vector4(0, 0, screenSize.x, screenSize.y), Texture.screen));
 		//Texture.screen.fill(Vector4(0.5, 0.5, 0.5, 0.5));
 
 		// dock
@@ -138,46 +186,31 @@ public void runVideo () {
 			0,
 		), Texture.screen, Texture.screen);
 
-		// mouse
-		drawGlass(Glass(
-			Shape(
-				Vector2(x, y),
-				Vector2(10, 10),
-				Vector2(10, 10),
-			),
-			alpha,
-			0.0,
-			0.0,
-			Color(0.35, 0.36, 0.37, 1.0),
-			Color(0.35, 0.36, 0.37, 1.0),
-			Color(0.01, 0.02, 0.03, 1.0),
-		), Texture.screen, Texture.screen);
-
-		drawGlass(Glass(
-			Shape(
-				Vector2(x, y),
-				Vector2(5, 5),
-				Vector2(5, 5),
-			),
-			alpha,
-			0.0,
-			0.0,
-			Color(0.95, 0.96, 0.97, 1.0),
-			Color(0.95, 0.96, 0.97, 1.0),
-			Color(0.21, 0.22, 0.23, 1.0),
-		), Texture.screen, Texture.screen);
-
 		Font.paragraph.drawText("ABCDEFGHIJKLMNOPQRSTUVWXYZ", Vector2(32, screenSize.y - 128), 64, x / screenSize.x, y / screenSize.y, screenSize.x);
 		Font.paragraph.drawText("abcdefghijklmnopqrstuvwxyz", Vector2(32, screenSize.y - 256), 64, x / screenSize.x, y / screenSize.y, screenSize.x);
 		Font.paragraph.drawText("0123456789=+-*/|\\.:,;!?_\"'()[]{}<>", Vector2(32, screenSize.y - 384), 64, x / screenSize.x, y / screenSize.y, screenSize.x);
 		Font.paragraph.drawText("The quick brown fox jumped over the lazy dog.", Vector2(32, screenSize.y - 512), 64, x / screenSize.x, y / screenSize.y, screenSize.x);
 		Font.paragraph.drawText("This text is being rendered through Bismuth's new text pipeline!", Vector2(32, screenSize.y - 512-128), 64, x / screenSize.x, y / screenSize.y, screenSize.x);
 
+		drawShape(Surface(Shape(
+			Vector2(x + 300, y - 200),
+			Vector2(300, 200),
+			Vector2( 45,  45),
+		), Color.zero, Color(0.1, 0.1, 0.1, 1), Border(0, Color.zero)));
 		drawGlass(Glass(Shape(
-			Vector2(x, y - 150),
-			Vector2(250, 100),
-			Vector2(100, 100),
-		), alpha, 0, 5));
+			Vector2(x + 100 + 15, y - 200),
+			Vector2(100, 200 - 15),
+			Vector2( 30,  30),
+		), 0, PI*0.75, 4));
+		drawGlass(Glass(Shape(
+			Vector2(x + 45, y - 45),
+			Vector2(15, 15),
+			Vector2(15, 15),
+		), 0, PI*0.75, 4, Color(0.8, 0.1, 0.15, 1), Color.zero, Color(0.8, 0.1, 0.15, 1)));
+
+		// mouse
+		drawGlass(Glass(Shape(Vector2(x, y), Vector2(10, 10), Vector2(10, 10))), Texture.screen, Texture.screen);
+		drawGlass(Glass(Shape(Vector2(x, y), Vector2( 5,  5), Vector2( 5,  5))), Texture.screen, Texture.screen);
 
 		drawCopy(CopyInstruction(
 			Vector4(0, 0, screenSize.x, screenSize.y),
