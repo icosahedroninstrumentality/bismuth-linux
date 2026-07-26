@@ -10,6 +10,7 @@ Demos:
 
 [ISC License](./LICENSE)
 
-Images are credited by an `attribution.md` file in the same directory.
-
-Special thanks to Ky for the amazing wallpapers! [Their personal website](https://KyNorthstar.me/).
+Special thanks to:
+- Ky for the amazing wallpapers! [Their personal website](https://KyNorthstar.me/).
+- Konu for the amazing wallpapers!
+- Pexels uploaders whose images We used (each file as an `attribution.md` attached)
