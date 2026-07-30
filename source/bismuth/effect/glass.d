@@ -12,234 +12,203 @@ public struct Glass {
 	Color reflection = Color(0.75, 0.76, 0.77, 1.0);
 	Color emission = Color(0.01, 0.02, 0.03, 1.0);
 	Color shine = Vector4.one;//Color(0.51, 0.52, 0.53, 1.0);
-	Vector refractivity = 1.0;
-	Vector reflectivity = 1.0;
+	Color border = Vector4.zero;//Color(0.51, 0.52, 0.53, 1.0);
 }
 
 public void drawGlass (
 	Glass glass,
-	Texture source = Texture.screen,
+	Texture _back = Texture.screen,
+	Texture _trr = Texture.screen,
+	Texture _trl = Texture.screen,
 	Texture target = Texture.screen
 ) {
 	import std.algorithm;
+	Vector2 minRadiusSize = Vector2(
+		min(glass.shape.radius.x, glass.shape.size.x),
+		min(glass.shape.radius.y, glass.shape.size.y),
+	);
+	Vector minRad = min(minRadiusSize.x, minRadiusSize.y);
 	Vector maxSize = max(glass.shape.size.x, glass.shape.size.y);
-	Vector4 region = Vector4(
-		glass.shape.position.x - maxSize,
-		glass.shape.position.y - maxSize,
-		maxSize * 2,
-		maxSize * 2,
+	Vector4 region = (glass.angle == Vector(0)) ? Vector4(
+		glass.shape.position.x - glass.shape.size.x,
+		glass.shape.position.y - glass.shape.size.y,
+		glass.shape.size.x * 2,
+		glass.shape.size.y * 2,
+	) : Vector4(
+		glass.shape.position.x - glass.shape.size.x,
+		glass.shape.position.y - glass.shape.size.y,
+		glass.shape.size.x * 2,
+		glass.shape.size.y * 2,
 	);
 
-	Vector4 paddedRegion = region + Vector4(
-		-glass.shape.radius.x * 4,
-		-glass.shape.radius.y * 4,
-		glass.shape.radius.x * 8,
-		glass.shape.radius.y * 8,
-	); // Add padding to ensure blur covers edges
+	Vector4 regionR = region + Vector4(
+		-glass.shape.radius.x, -glass.shape.radius.y,
+		 glass.shape.radius.x * 2, glass.shape.radius.y * 2,
+	);
+	Vector4 regionL = region + Vector4(
+		-glass.shape.radius.x * 4, -glass.shape.radius.y * 4,
+		 glass.shape.radius.x * 8,  glass.shape.radius.y * 8,
+	);
 
 	// Ensure temporary textures match current screen size (lazy init / resize)
 	if (back is null || back.size != screenSize) back = new Texture(screenSize);
-	if (blur is null || blur.size != screenSize) blur = new Texture(screenSize);
+	if (trr is null || trr.size != screenSize) trr = new Texture(screenSize);
+	if (trl is null || trl.size != screenSize) trl = new Texture(screenSize);
 	
-	drawCopy(CopyInstruction(paddedRegion, source, paddedRegion, back));
-	if (glass.blur == 0) {
-		drawCopy(CopyInstruction(paddedRegion, source, paddedRegion, blur));
-	} else {
-		drawBlur(BlurInstruction(paddedRegion, source, paddedRegion, blur, glass.blur));
-	}
-
-	uback.set(back);
-	ublur.set(blur);
-
-	uposition.set(glass.shape.position);
-	usize.set(glass.shape.size);
-	uradius.set(glass.shape.radius);
-	upower.set((glass.shape.size * 2.0) / glass.shape.radius);
-
-	Vector2 minRadiusSize = Vector2(
-		min(glass.shape.radius.x * 2.0, glass.shape.size.x),
-		min(glass.shape.radius.y * 2.0, glass.shape.size.y),
-	);
-	Vector minRadius = min(minRadiusSize.x, minRadiusSize.y);
-	uminRadius.set(minRadius);
+	Copy.draw(region, _back, region, back);
 	
-	ureflection.set(glass.reflection);
-	uemission.set(glass.emission);
-	utransmission.set(glass.transmission);
-	ushine.set(glass.shine);
-
-	urefractivity.set(glass.refractivity);
-	ureflectivity.set(glass.reflectivity);
-	uangle.set(glass.angle);
-
-	Vector2 shineDir = Vector2(sin(glass.shineAngle), cos(glass.shineAngle)).normalize();
-	if (shineDir.length == 0) shineDir = Vector2.one;
-	ushineDir.set(shineDir);
-	upx.set(Vector2(1, 1) / screenSize);
+	if (glass.blur == 0) Copy.draw(regionR, _trr, regionR, trr);
+	else drawBlur(BlurInstruction( regionR, _trr, regionR, trr, glass.blur));
 	
-	shader.draw(
+	if (glass.blur == 0) Copy.draw(regionL, _trl, regionL, trl);
+	else drawBlur(BlurInstruction( regionL, _trl, regionL, trl, glass.blur));
+	
+	kback.set(back);
+	ktrr.set(trr);
+	ktrl.set(trl);
+
+	position.set(glass.shape.position);
+	size.set(glass.shape.size);
+	invSize.set(Vector2.one / glass.shape.size);
+	corner.set(glass.shape.radius);
+	power.set((glass.shape.size * 2.0) / glass.shape.radius);
+
+	minRadius.set(minRad);
+	
+	reflection.set(glass.reflection);
+	emission.set(glass.emission);
+	transmission.set(glass.transmission);
+	shine.set(glass.shine);
+	rotate.set(Vector2(cos(glass.angle), sin(glass.angle)));
+	kborder.set(glass.border);
+
+	shineDir.set(Vector2(cos(glass.shineAngle), sin(glass.shineAngle)).normalize());
+	px.set(Vector2.one / screenSize);
+	
+	kernel.draw( // exit -11 here
 		target,
 		region,
 	);
 }
 
-private Shader shader;
+private Kernel kernel;
 
-private Uniform!Vector2 uposition;
-private Uniform!Vector2 usize;
-private Uniform!Vector2 uradius;
-private Uniform!Vector2 upower;
-private Uniform!Vector uminRadius;
+private KernelParameter!Vector2 position;
+private KernelParameter!Vector2 invSize;
+private KernelParameter!Vector2 power;
+private KernelParameter!Vector2 size;
+private KernelParameter!Vector2 corner;
+private KernelParameter!Vector  minRadius;
+private KernelParameter!Vector4 reflection;
+private KernelParameter!Vector4 emission;
+private KernelParameter!Vector4 transmission;
+private KernelParameter!Vector4 shine;
+private KernelParameter!Vector2 rotate;
+private KernelParameter!Vector2 shineDir;
+private KernelParameter!Vector2 px;
+private KernelParameter!Texture kback;
+private KernelParameter!Texture ktrr;
+private KernelParameter!Texture ktrl;
+private KernelParameter!Vector4 kborder;
 
-private Uniform!Vector4 ureflection;
-private Uniform!Vector4 uemission;
-private Uniform!Vector4 utransmission;
-private Uniform!Vector4 ushine;
-
-private Uniform!Vector urefractivity;
-private Uniform!Vector ureflectivity;
-private Uniform!Vector uangle;
-
-private Uniform!Vector2 ushineDir;
-private Uniform!Vector2 upx;
-private Uniform!Texture ublur;
-private Uniform!Texture uback;
-
-private Texture blur;
 private Texture back;
+private Texture trr;
+private Texture trl;
 
 public void initGlass () {
-	shader = new Shader(`#version 330 core
-	precision highp float;
+	kernel = new Kernel((Kernel k) { with (k) {
+		position = uniform!Vector2();
+		size = uniform!Vector2();
+		invSize = uniform!Vector2();
+		corner = uniform!Vector2();
+		power = uniform!Vector2();
+		minRadius = uniform!Vector();
+		reflection = uniform!Vector4();
+		emission = uniform!Vector4();
+		transmission = uniform!Vector4();
+		shine = uniform!Vector4();
+		rotate = uniform!Vector2();
+		shineDir = uniform!Vector2();
+		px = uniform!Vector2();
+		kback = uniform!Texture();
+		ktrr = uniform!Texture();
+		ktrl = uniform!Texture();
+		kborder = uniform!Vector4();
+		
+		KernelStored!Vector calculateMaskB() {
+			KernelStored!Vector2 newPower = ((size - Vector(1)) * Vector(2)) / (corner - Vector(1));
+			KernelStored!Vector2 offset = coord.component!"xy" - position;
+			KernelStored!Vector2 rotated = compose(
+				offset.component!"x" * rotate.component!"x" - offset.component!"y" * rotate.component!"y",
+				offset.component!"x" * rotate.component!"y" + offset.component!"y" * rotate.component!"x"
+			);
+			KernelStored!Vector2 d = pow(
+				abs(rotated / (size - Vector(1))),
+				newPower
+			);
+			KernelStored!Vector sum = d.component!"x" + d.component!"y";
+			return Vector(1) - min(
+				literal(Vector(1)),
+				pow(sum, minRadius - Vector(1))
+			);
+		}
 
-	in vec2 uv;
-	out vec4 finalColor;
+		KernelStored!Vector calculateInsideS () {
+			KernelStored!Vector2 newPower = ((size - Vector(2)) * Vector(2)) / (corner - Vector(2));
+			KernelStored!Vector2 offset = coord.component!"xy" - position;
+			KernelStored!Vector2 rotated = compose(
+				offset.component!"x" * rotate.component!"x" - offset.component!"y" * rotate.component!"y",
+				offset.component!"x" * rotate.component!"y" + offset.component!"y" * rotate.component!"x",
+			);
+			KernelStored!Vector2 d = pow(abs(rotated / (size - Vector(2))), newPower);
+			return min(literal(Vector(1)), d.component!"x" + d.component!"y");
+		}
 
-	uniform vec2 position;
-	uniform vec2 size;
-	uniform vec2 radius;
-	uniform float minRadius;
-	uniform vec2 power;
-	uniform float angle;
-	
-	uniform vec4 reflection;
-	uniform vec4 emission;
-	uniform vec4 transmission;
-	uniform vec4 shine;
-	
-	uniform float refractivity;
-	uniform float reflectivity;
-	
-	uniform vec2 shineDir = vec2(1.0, 1.0);
-
-	uniform vec2 px;
-
-	uniform sampler2D blur;///min:l;mag:l;s:m;t:m;
-	uniform sampler2D back;///min:l;mag:l;s:m;t:m;
-
-	float calculateInside (vec2 Sposition) {
-		vec2 offset = Sposition - position;
-		float cosA = cos(angle);
-		float sinA = sin(angle);
-		vec2 rotatedOffset = vec2(offset.x * cosA - offset.y * sinA,
-						offset.x * sinA + offset.y * cosA);
-		vec2 d = pow(abs(rotatedOffset / size), power);
-		return d.x + d.y;
-	}
-
-	float calculateMaskB (vec2 Sposition) {
-		vec2 newPower = ((size - 1.0) * 2.0) / (radius - 1.0);
-		vec2 offset = Sposition - position;
-		float cosA = cos(angle);
-		float sinA = sin(angle);
-		vec2 rotatedOffset = vec2(offset.x * cosA - offset.y * sinA,
-						offset.x * sinA + offset.y * cosA);
-		vec2 d = pow(abs(rotatedOffset / (size - 1.0)), newPower);
-		return 1.0 - min(1.0, pow(d.x + d.y, 0.5 * (minRadius - 1.0)));
-	}
-
-	float calculateInsideS (vec2 Sposition) {
-		vec2 newPower = ((size - 2.0) * 2.0) / (radius - 2.0);
-		vec2 offset = Sposition - position;
-		float cosA = cos(angle);
-		float sinA = sin(angle);
-		vec2 rotatedOffset = vec2(offset.x * cosA - offset.y * sinA,
-						offset.x * sinA + offset.y * cosA);
-		vec2 d = pow(abs(rotatedOffset / (size - 2.0)), newPower);
-		return min(1.0, d.x + d.y);
-	}
-
-	void main() {
-		vec4 refracted = vec4(0.0);
-		vec4 reflected = vec4(0.0);
-
-		vec3 inside;
-
-		inside.z = calculateInside(gl_FragCoord.xy);
-		if (inside.z > 1.0) { finalColor = texture(back, uv); return; }
-		inside.x = calculateInside(gl_FragCoord.xy + vec2(1.0,0.0));
-		inside.y = calculateInside(gl_FragCoord.xy + vec2(0.0,1.0));
-
-		float mask = max(0.0, 1.0 - pow(inside.z, 0.5 * minRadius));
-
-		vec2 grad = vec2(inside.x - inside.z, inside.y - inside.z);
-		vec2 dir_ = normalize(grad + 1e-5);
-
-		vec2 offsetR = dir_ * pow(inside.z, 2.0)         * px * minRadius * refractivity;
-		vec2 offsetL = dir_ * (1.0 - pow(inside.z, 2.0)) * px * minRadius * reflectivity;
-
-		vec2 abberation = max(vec2(0.5), 1.0 - 6.0 / radius);
-		vec2 abberationR = abberation / refractivity;
-		vec2 abberationL = abberation / reflectivity;
-
-		refracted.r = texture(blur, uv - offsetR).r;
-		refracted.g = texture(blur, uv - offsetR * abberationR).g;
-		refracted.b = texture(blur, uv - offsetR * abberationR * abberationR).b;
-
-		refracted.a = 1.0;
-
-		reflected.r = texture(blur, uv + offsetL).r;
-		reflected.g = texture(blur, uv + offsetL * abberationL).g;
-		reflected.b = texture(blur, uv + offsetL * abberationL * abberationL).b;
-
-		reflected.a = 1.0;
-
-		float streak = pow(abs(dot(dir_, shineDir)), 3.14);
-
-		float shineV = calculateInsideS(gl_FragCoord.xy);
-		float shineMask = min(1.0, pow(shineV, (minRadius - 2.0) * 0.5));
-		float reflectionMask = pow(inside.z, 2.0);
-
-		finalColor = mix(
-			texture(back, uv),
-			(
-				refracted * transmission
-				+ reflected * reflection * reflectionMask
-				+ emission
-				+ shine * streak * shineMask
-			) * calculateMaskB(gl_FragCoord.xy),
-			mask
+		KernelStored!Vector i = calculateShape(k,
+			coord.component!"xy", position, invSize, power, rotate
 		);
-	}
-	`);
+		earlyOutput(op!bool(i, ">", Vector(1)), sample(kback, uv));
+		KernelStored!Vector3 inside = compose(
+			calculateShape(k, coord.component!"xy" + Vector2(1, 0), position, invSize, power, rotate),
+			calculateShape(k, coord.component!"xy" + Vector2(0, 1), position, invSize, power, rotate),
+			i,
+		);
+		KernelStored!Vector mask = max(literal(Vector(0)), Vector(1) - shapeMask(k, inside.component!"z", minRadius));
 
-	uposition = shader.uniform!Vector2("position", Vector2.zero);
-	usize = shader.uniform!Vector2("size", Vector2.zero);
-	uradius = shader.uniform!Vector2("radius", Vector2.zero);
-	upower = shader.uniform!Vector2("power", Vector2.zero);
-	uminRadius = shader.uniform!Vector("minRadius", 0);
+		KernelStored!Vector2 grad = compose(inside.component!"x" - inside.component!"z", inside.component!"y" - inside.component!"z");
+		KernelStored!Vector2 dir_ = normalize(grad + EPS);
+		KernelStored!Vector2 offsetR = dir_ * pow(inside.component!"z", literal(Vector(2))) * px * corner * Vector(2);
+		KernelStored!Vector2 offsetL = dir_ * (Vector(1) - pow(inside.component!"z", literal(Vector(2)))) * px * corner * Vector(4);
 
-	ureflection = shader.uniform!Vector4("reflection", Vector4.one);
-	uemission = shader.uniform!Vector4("emission", Vector4.one);
-	utransmission = shader.uniform!Vector4("transmission", Vector4.one);
-	ushine = shader.uniform!Vector4("shine", Vector4.one);
+		KernelStored!Vector2 abberation = max(literal(Vector2(0.5)), literal(Vector(1.0)) - literal(Vector(6.0)) / corner);
 
-	urefractivity = shader.uniform!Vector("refractivity", 0.0);
-	ureflectivity = shader.uniform!Vector("reflectivity", 0.0);
-	uangle = shader.uniform!Vector("angle", 0.0);
+		KernelStored!Vector4 refracted = compose(
+			sample(ktrr, uv - offsetR).component!"r",
+			sample(ktrr, uv - offsetR * abberation).component!"g",
+			sample(ktrr, uv - offsetR * abberation * abberation).component!"b",
+			literal(Vector(1)),
+		);
 
-	ushineDir = shader.uniform!Vector2("shineDir", Vector2.zero);
-	upx = shader.uniform!Vector2("px", Vector2.zero);
-	ublur = shader.uniform!Texture("blur", blur);
-	uback = shader.uniform!Texture("back", back);
+		KernelStored!Vector4 reflected = compose(
+			sample(ktrl, uv + offsetL).component!"r",
+			sample(ktrl, uv + offsetL * abberation).component!"g",
+			sample(ktrl, uv + offsetL * abberation * abberation).component!"b",
+			literal(Vector(1)),
+		);
+
+		KernelStored!Vector streak = pow(abs(dot(dir_, shineDir)), PI);
+		KernelStored!Vector shineV = calculateInsideS();
+		KernelStored!Vector shineMask = min(literal(Vector(1)), pow(shineV, minRadius - Vector(2)));
+		KernelStored!Vector reflectionMask = pow(inside.component!"z", literal(Vector(2)));
+
+		auto border = calculateMaskB();
+		output(mix(
+			sample(kback, uv),
+			((refracted * transmission
+			+ reflected * reflection * reflectionMask
+			+ emission
+			) * (Vector(1)-(streak * shineMask)) + shine * streak * shineMask) * border + kborder * (Vector(1) - border),
+			mask,
+		));
+	}});
 }

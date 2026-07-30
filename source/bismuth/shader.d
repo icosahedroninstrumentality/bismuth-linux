@@ -10,6 +10,7 @@ public struct Shape {
 	Vector2 position;
 	Vector2 size;
 	Vector2 radius;
+	Vector angle = 0;
 }
 
 public alias Color = Vector4;
@@ -43,7 +44,7 @@ public class Uniform (T) {
 	this (
 		string name_,
 		GLint location_,
-		T cache_,
+		T cache_ = T.init,
 	) {
 		this.name = name_;
 		this.location = location_;
@@ -53,7 +54,8 @@ public class Uniform (T) {
 	public void set (T data) { cache = data; }
 
 	public void upload (int* texUnit) {
-		static if (is(T == int))            glUniform1i(location, cache);
+		static if (is(T == bool))           glUniform1i(location, cache);
+		else static if (is(T == int))       glUniform1i(location, cache);
 		else static if (is(T == Vector))    glUniform1f(location, cache);
 		else static if (is(T == Vector2))   glUniform2f(location, cache.x, cache.y);
 		else static if (is(T == Vector3))   glUniform3f(location, cache.x, cache.y, cache.z);
@@ -141,12 +143,22 @@ public class Shader {
 
 	private void delegate(int*)[] feeders;
 
-	public Uniform!T uniform (T) (string name, T cache) {
+	public Uniform!T uniform (T) (string name, T cache = T.init) {
 		GLint location = glGetUniformLocation(program, toStringz(name));
 		if (location < 0) throw new Error("Uniform "~name~" not found");
 		Uniform!T u = new Uniform!(T)(name, location, cache);
 		feeders ~= (int* i) => u.upload(i);
 		return u;
+	}
+
+	public GLint address (string name) {
+		GLint location = glGetUniformLocation(program, toStringz(name));
+		if (location < 0) throw new Error("Uniform "~name~" not found");
+		return location;
+	}
+
+	public void hook (void delegate (int*) feeder) {
+		feeders ~= feeder;
 	}
 
 	public void use () {
@@ -160,6 +172,7 @@ public class Shader {
 	}
 
 	public void draw (Texture target, Vector4 area) {
+		if (area.z == Vector(0) || area.w == Vector(0)) return;
 		Vector2 size;
 		if (target is null) {
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);

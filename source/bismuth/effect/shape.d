@@ -24,7 +24,7 @@ public void drawShape (
 
 	if (back is null || back.size != screenSize) back = new Texture(screenSize);
 	
-	drawCopy(CopyInstruction(paddedRegion, source, paddedRegion, back));
+	Copy.draw(paddedRegion, source, paddedRegion, back);
 
 	uback.set(back);
 
@@ -71,6 +71,32 @@ private Uniform!Vector uborder;
 private Uniform!Texture uback;
 
 private Texture back;
+
+public KernelStored!Vector calculateShape (
+	Kernel k,
+	KernelStored!Vector2 samplePoint,
+	KernelStored!Vector2 position,
+	KernelStored!Vector2 invSize,
+	KernelStored!Vector2 power,
+	KernelStored!Vector2 rotate,
+) { with (k) {
+	KernelStored!Vector2 offset = samplePoint - position;
+	KernelStored!Vector2 rotated = compose(
+		offset.component!"x" * rotate.component!"x" - offset.component!"y" * rotate.component!"y",
+		offset.component!"x" * rotate.component!"y" + offset.component!"y" * rotate.component!"x",
+	);
+	KernelStored!Vector2 d = pow(abs(rotated * invSize), power);
+	return d.component!"x" + d.component!"y";
+}}
+
+KernelStored!Vector shapeMask (
+	Kernel k,
+	KernelStored!Vector inside,
+	KernelStored!Vector corner,
+) { with (k) {
+	return pow(inside, corner);
+}}
+
 
 public void initShape () {
 	shader = new Shader(`#version 330 core

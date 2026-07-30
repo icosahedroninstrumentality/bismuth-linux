@@ -65,9 +65,9 @@ public void drawGlassStroke (
 	if (back is null || back.size != screenSize) back = new Texture(screenSize);
 	if (blur is null || blur.size != screenSize) blur = new Texture(screenSize);
 
-	drawCopy(CopyInstruction(paddedRegion, source, paddedRegion, back));
+	Copy.draw(paddedRegion, source, paddedRegion, back);
 	if (glass.blur == 0) {
-		drawCopy(CopyInstruction(paddedRegion, source, paddedRegion, blur));
+		Copy.draw(paddedRegion, source, paddedRegion, blur);
 	} else {
 		drawBlur(BlurInstruction(paddedRegion, source, paddedRegion, blur, glass.blur));
 	}
@@ -90,7 +90,7 @@ public void drawGlassStroke (
 	Vector2 shineDir = Vector2(sin(glass.shineAngle), cos(glass.shineAngle)).normalize();
 	if (shineDir.length == 0) shineDir = Vector2.one;
 	ushineDir.set(shineDir);
-	upx.set(Vector2(1, 1.0) / screenSize);
+	upx.set(Vector2(1, 1.0) / source.size);
 	
 	shader.draw(
 		target,

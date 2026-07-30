@@ -7,6 +7,7 @@ import std.string;
 public class Texture {
 	public __gshared Texture raw = null;
 	public __gshared Texture screen;
+	public __gshared Texture temp;
 
 	public __gshared bool floatRenderable;
 	public __gshared GLuint internalFormat;
@@ -32,6 +33,7 @@ public class Texture {
 		//GLfloat maxAniso;
 		//glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAniso);
 		//if (supportedExtension("EXT_texture_filter_anisotropic")) glTexParameterf(GL_TEXTURE_2D, GL_MAX_TEXTURE_MAX_ANISOTROPY, maxAniso);
+		clear();
 	}
 
 	public void use () {
@@ -47,7 +49,7 @@ public class Texture {
 	}
 
 	public void clear () {
-		fill(Vector4(0, 0, 0, 0));
+		fill(Vector4(0, 0, 0, 1));
 	}
 
 	import bismuth.loaders.png;

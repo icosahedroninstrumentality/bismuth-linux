@@ -58,7 +58,7 @@ public void drawStroke (
 ) {
 	// Ensure temporary textures match current screen size (lazy init / resize)
 	if (back is null || back.size != screenSize) back = new Texture(screenSize);
-	drawCopy(CopyInstruction(region, source, region, back));
+	Copy.draw(region, source, region, back);
 	
 	uback.set(back);
 	ucount.set(cast (int) (strokes.length));

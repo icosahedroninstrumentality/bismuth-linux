@@ -12,6 +12,7 @@ public import bismuth.shader;
 public import bismuth.effect.copy;
 public import bismuth.effect.blur;
 public import bismuth.effect.glass;
+public import bismuth.effect.gradient;
 public import bismuth.effect.glass_stroke;
 public import bismuth.effect.stroke;
 public import bismuth.effect.shape;
@@ -39,23 +40,23 @@ public Texture b;
 ulong wallpaperSelection = 0;
 
 const wallpaperfiles = [
-	"resources/Wallpaper/Ky/Ky_DunesWandering.heic",
-	"resources/Wallpaper/Ky/Ky_Sand.heic",
-	"resources/Wallpaper/Ky/Ky_SunsetDune.heic",
-	"resources/Wallpaper/Ky/Ky_GalacticDunes.heic",
+	"resources/Wallpaper/Konu/IMG_8757.HEIC",
 	"resources/Wallpaper/Ky/Ky_SanLuis.heic",
+	"resources/Wallpaper/Ky/Ky_SunsetDune.heic",
+	"resources/Wallpaper/Ky/Ky_Sand.heic",
+	"resources/Wallpaper/Ky/Ky_DunesWandering.heic",
+	"resources/Wallpaper/Ky/Ky_GalacticDunes.heic",
 	"resources/Wallpaper/Ky/Ky_TwilightDunes.heic",
 	"resources/Wallpaper/Konu/IMG_8455.HEIC",
 	"resources/Wallpaper/Konu/IMG_8665.HEIC",
 	"resources/Wallpaper/Konu/IMG_8671.HEIC",
-	"resources/Wallpaper/Konu/IMG_8729.HEIC",
 	"resources/Wallpaper/Konu/IMG_8730.HEIC",
+	"resources/Wallpaper/Konu/IMG_8729.HEIC",
 	"resources/Wallpaper/Konu/IMG_8731.HEIC",
 	"resources/Wallpaper/Konu/IMG_8732.HEIC",
 	"resources/Wallpaper/Konu/IMG_8739.HEIC",
 	"resources/Wallpaper/Konu/IMG_8740.HEIC",
 	"resources/Wallpaper/Konu/IMG_8741.HEIC",
-	"resources/Wallpaper/Konu/IMG_8757.HEIC",
 	"resources/Wallpaper/Konu/IMG_8760.HEIC",
 	"resources/Wallpaper/Crystal/Black/image.jpg",
 	"resources/Wallpaper/Crystal/Green/image.jpg",
@@ -84,6 +85,7 @@ extern(C) void keyCallback(GLFWwindow* window, int key, int scancode, int action
     }
     // Handle other keys...
 }
+double x, y;
 
 public void runVideo () {
 	// 1. Initialize GLFW
@@ -121,9 +123,9 @@ public void runVideo () {
 
 	glGenFramebuffers(1, &fb);
 
-	initCopy();
 	initBlur();
 	initGlass();
+	initGradient();
 	initStroke();
 	initGlassStroke();
 	initShape();
@@ -150,30 +152,27 @@ public void runVideo () {
 		glfwGetFramebufferSize(window, &width, &height);
 		screenSize = Vector2(width, height);
 
-		if (Texture.screen is null || Texture.screen.size != screenSize) {
-			Texture.screen = new Texture(screenSize);
-		}
+		if (Texture.screen is null || Texture.screen.size != screenSize) { Texture.screen = new Texture(screenSize); }
+		if (Texture.temp is null || Texture.temp.size != screenSize) { Texture.temp = new Texture(screenSize); }
 		
 		glViewport(0, 0, width, height);
 
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
+		//glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		//glClear(GL_COLOR_BUFFER_BIT);
 
-		double x, y;
 		glfwGetCursorPos(window, &x, &y);
 		y = screenSize.y - y;
 
-		Texture.screen.clear();
+		
 
 		auto s = max(screenSize.x / wallpapers[wallpaperSelection].size.x, screenSize.y / wallpapers[wallpaperSelection].size.y);
 		auto src = Vector4(
 			(wallpapers[wallpaperSelection].size.x - screenSize.x / s) / 2,
 			(wallpapers[wallpaperSelection].size.y - screenSize.y / s) / 2,
 			screenSize.x / s,
-			screenSize.y / s
+			screenSize.y / s,
 		);
-		drawCopy(CopyInstruction(src, wallpapers[wallpaperSelection], Vector4(0, 0, screenSize.x, screenSize.y), Texture.screen));
-		//Texture.screen.fill(Vector4(0.5, 0.5, 0.5, 0.5));
+		Copy.draw(src, wallpapers[wallpaperSelection], Vector4(0, 0, screenSize.x, screenSize.y), Texture.screen);
 
 		// dock
 		drawGlass(Glass(
@@ -186,40 +185,60 @@ public void runVideo () {
 			0,
 		), Texture.screen, Texture.screen);
 
-		Font.paragraph.drawText("ABCDEFGHIJKLMNOPQRSTUVWXYZ", Vector2(32, screenSize.y - 128), 64, x / screenSize.x, y / screenSize.y, screenSize.x);
-		Font.paragraph.drawText("abcdefghijklmnopqrstuvwxyz", Vector2(32, screenSize.y - 256), 64, x / screenSize.x, y / screenSize.y, screenSize.x);
-		Font.paragraph.drawText("0123456789=+-*/|\\.:,;!?_\"'()[]{}<>", Vector2(32, screenSize.y - 384), 64, x / screenSize.x, y / screenSize.y, screenSize.x);
-		Font.paragraph.drawText("The quick brown fox jumped over the lazy dog.", Vector2(32, screenSize.y - 512), 64, x / screenSize.x, y / screenSize.y, screenSize.x);
-		Font.paragraph.drawText("This text is being rendered through Bismuth's new text pipeline!", Vector2(32, screenSize.y - 512-128), 64, x / screenSize.x, y / screenSize.y, screenSize.x);
+		//Font.paragraph.drawText("ABCDEFGHIJKLMNOPQRSTUVWXYZ", Vector2(32, screenSize.y - 128), 64, x / screenSize.x, y / screenSize.y, screenSize.x);
+		//Font.paragraph.drawText("abcdefghijklmnopqrstuvwxyz", Vector2(32, screenSize.y - 256), 64, x / screenSize.x, y / screenSize.y, screenSize.x);
+		//Font.paragraph.drawText("0123456789=+-*/|\\.:,;!?_\"'()[]{}<>", Vector2(32, screenSize.y - 384), 64, x / screenSize.x, y / screenSize.y, screenSize.x);
+		//Font.paragraph.drawText("The quick brown fox jumped over the lazy dog.", Vector2(32, screenSize.y - 512), 64, x / screenSize.x, y / screenSize.y, screenSize.x);
+		//Font.paragraph.drawText("This text is being rendered through Bismuth's new text pipeline!", Vector2(32, screenSize.y - 512-128), 64, x / screenSize.x, y / screenSize.y, screenSize.x);
 
-		drawShape(Surface(Shape(
-			Vector2(x + 300, y - 200),
-			Vector2(300, 200),
-			Vector2( 45,  45),
-		), Color.zero, Color(0.1, 0.1, 0.1, 1), Border(0, Color.zero)));
-		drawGlass(Glass(Shape(
-			Vector2(x + 100 + 15, y - 200),
-			Vector2(100, 200 - 15),
-			Vector2( 30,  30),
-		), 0, PI*0.75, 4));
-		drawGlass(Glass(Shape(
-			Vector2(x + 45, y - 45),
-			Vector2(15, 15),
-			Vector2(15, 15),
-		), 0, PI*0.75, 4, Color(0.8, 0.1, 0.15, 1), Color.zero, Color(0.8, 0.1, 0.15, 1)));
+		//drawWindow(Vector4(x, y, 500, 300));
 
+		import bismuth.hi;
+		drawHi(Vector2(x,y), 1);
 		// mouse
 		drawGlass(Glass(Shape(Vector2(x, y), Vector2(10, 10), Vector2(10, 10))), Texture.screen, Texture.screen);
 		drawGlass(Glass(Shape(Vector2(x, y), Vector2( 5,  5), Vector2( 5,  5))), Texture.screen, Texture.screen);
 
-		drawCopy(CopyInstruction(
+		Copy.draw(
 			Vector4(0, 0, screenSize.x, screenSize.y),
 			Texture.screen,
 			Vector4(0, 0, screenSize.x, screenSize.y),
 			Texture.raw
-		));
+		);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
+}
+
+
+
+void drawWindow (Vector4 rect) {
+	enum Vector unit = Vector(10);
+
+	enum Color teal = Color(.4, .8, .9, 1);
+
+	Vector2 topLeft = Vector2(rect.x - rect.z / 2, rect.y - rect.w / 2);
+	
+	drawShape(Surface(Shape(
+		Vector2(rect.x + rect.z / 2, rect.y + rect.w / 2),
+		Vector2(rect.z / 2, rect.w / 2),
+		Vector2(unit * 2, unit * 2),
+	), Color.zero, Color(1, 1, 1, 1), Border(0, Color.zero)));
+	
+	drawGradient(Texture.temp, Texture.screen, Shape(
+		Vector2(rect.x + rect.z / 2 + unit - (rect.z / 2 - 100), rect.y + rect.w / 2 + unit),
+		Vector2(100, rect.w / 2 - unit),
+		Vector2(unit, unit),
+	), PI * -0.75, Color.one, teal / 2 + Vector4(0.5, 0.5, 0.5, 0.5));
+	drawGlass(Glass(Shape(
+		Vector2(rect.x + rect.z / 2 + unit - (rect.z / 2 - 100), rect.y + rect.w / 2 + unit),
+		Vector2(100, rect.w / 2 - unit),
+		Vector2(unit, unit),
+	), 0, PI*0.75, 0, Color.one, Glass().reflection, Glass().emission, Glass().shine, teal), Texture.screen, Texture.temp, Texture.screen);
+	drawGlass(Glass(Shape(
+		Vector2(rect.x + rect.z / 2 + unit * 2, rect.y + rect.w / 2 + unit * 2),
+		Vector2(15, 15),
+		Vector2(15, 15),
+	), 0, PI*0.75, 4, Color(0.8, 0.1, 0.15, 1), Color.zero, Color(0.8, 0.1, 0.15, 1)));
 }
