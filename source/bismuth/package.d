@@ -216,8 +216,15 @@ public void runVideo () {
 		//glClearColor(Radian.zero, Radian.zero, Radian.zero, Radian.one);
 		//glClear(GL_COLOR_BUFFER_BIT);
 
-		glfwGetCursorPos(window, &x, &y);
-		y = Texture.screen.size.y.raw - y;
+		double nx, ny;
+		glfwGetCursorPos(window, &nx, &ny);
+		ny = Texture.screen.size.y.raw - ny;
+		if (nx == x && ny == y) {
+			glfwPollEvents();
+			continue;
+		}
+		x = nx;
+		y = ny;
 
 		Radian s = (Texture.screen.size.x / wallpapers[wallpaperSelection].size.x).max(Texture.screen.size.y / wallpapers[wallpaperSelection].size.y);
 		auto src = Vector4(
@@ -318,6 +325,9 @@ class Window {
 		trafficRed.border =      OKLCHA(Radian(.6), Radian(.2), Degree( 30), Radian(1));
 		trafficOrange.border =   OKLCHA(Radian(.6), Radian(.2), Degree( 75), Radian(1));
 		trafficGreen.border =    OKLCHA(Radian(.6), Radian(.2), Degree(135), Radian(1));
+		trafficRed.reflection =  Vector4.zero;
+		trafficOrange.reflection =  Vector4.zero;
+		trafficGreen.reflection =  Vector4.zero;
 	}
 
 	public void recolor (OKLCHA _back) {
