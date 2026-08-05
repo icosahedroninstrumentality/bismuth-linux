@@ -1,6 +1,6 @@
-module bismuth.loaders.tci;
+module bismuth.loader.tci;
 
-import bismuth;
+import bismuth.framework;
 
 enum ColorSpace {
 	RGB,
@@ -15,5 +15,5 @@ class TrueColorImage {
 	uint width;
 	uint height;
 	ColorSpace colorSpace;
-	Vector[] data;
+	Radian[] data;
 }

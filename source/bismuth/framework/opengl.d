@@ -1,40 +1,48 @@
-module bismuth.shader;
+module bismuth.framework.opengl;
 
+import bismuth.framework;
 import bindbc.opengl;
 import std.stdio;
-import bismuth;
-public import vector;
-
 
 public struct Shape {
 	Vector2 position;
 	Vector2 size;
 	Vector2 radius;
-	Vector angle = 0;
+	Degree angle = 0;
 }
 
-public alias Color = Vector4;
+/// bottom-left origin corner
+public struct RectRound {
+	Vector2 position;
+	Vector2 size;
+	Vector2 corner;
+	Degree angle = 0;
 
-public struct Outline {
-	Vector width;
-	Color color;
+	public Shape toShape () const {
+		return Shape(
+			position + size / Radian.two,
+			size / Radian.two,
+			corner,
+			angle,
+		);
+	}
+
+	alias toShape this;
 }
 
 public struct Border {
-	Vector width;
-	Color color;
+	Radian width;
+	Vector4 color;
 }
 
 public struct Surface {
 	Shape shape;
-	Color albedo;
-	Color emission;
+	Vector4 albedo;
+	Vector4 emission;
 	//Outline[] outlines;
 	//Border[] borders;
 	Border border;
 }
-
-
 
 public class Uniform (T) {
 	public string name;
@@ -56,12 +64,14 @@ public class Uniform (T) {
 	public void upload (int* texUnit) {
 		static if (is(T == bool))           glUniform1i(location, cache);
 		else static if (is(T == int))       glUniform1i(location, cache);
-		else static if (is(T == Vector))    glUniform1f(location, cache);
-		else static if (is(T == Vector2))   glUniform2f(location, cache.x, cache.y);
-		else static if (is(T == Vector3))   glUniform3f(location, cache.x, cache.y, cache.z);
-		else static if (is(T == Vector4))   glUniform4f(location, cache.x, cache.y, cache.z, cache.w);
-		else static if (is(T == int[]))     glUniform1iv(location, cast(GLsizei) cache.length, cache.ptr);
-		else static if (is(T == float[]))   glUniform1fv(location, cast(GLsizei) cache.length, cache.ptr);
+		else static if (is(T == Radian))    glUniform1f(location, cache.raw);
+		else static if (is(T == Degree))    glUniform1f(location, cache.rad.raw);
+		else static if (is(T == Vector2))   glUniform2f(location, cache.x.raw, cache.y.raw);
+		else static if (is(T == Vector3))   glUniform3f(location, cache.x.raw, cache.y.raw, cache.z.raw);
+		else static if (is(T == Vector4))   glUniform4f(location, cache.x.raw, cache.y.raw, cache.z.raw, cache.w.raw);
+		else static if (is(T == int[]))     glUniform1iv(location, cast(GLsizei) cache.length, cast(GLint*) cache.ptr);
+		else static if (is(T == Radian[]))  glUniform1fv(location, cast(GLsizei) cache.length, cast(GLfloat*) cache.ptr);
+		else static if (is(T == Degree[])) {Radian[] array; foreach (Degree key; cache) array ~= key.rad.raw; glUniform1fv(location, cast(GLsizei) array.length, cast (GLfloat*) array.ptr);}
 		else static if (is(T == Vector2[])) glUniform2fv(location, cast(GLsizei) cache.length, cast(GLfloat*) cache.ptr);
 		else static if (is(T == Vector3[])) glUniform3fv(location, cast(GLsizei) cache.length, cast(GLfloat*) cache.ptr);
 		else static if (is(T == Vector4[])) glUniform4fv(location, cast(GLsizei) cache.length, cast(GLfloat*) cache.ptr);
@@ -87,7 +97,7 @@ public class Shader {
 			uv = a_position * 0.5 + 0.5;
 		}
 	`;
-	private __gshared const Vector[] positions = [
+	private __gshared const Radian[] positions = [
 		-1, -1,  1, -1,  -1,  1,  // first triangle
 		-1,  1,  1, -1,   1,  1   // second triangle
 	];
@@ -99,7 +109,7 @@ public class Shader {
 
 	private GLuint compile (string source, GLuint type) {
 		GLuint shader = glCreateShader(type);
-		if (!shader) throw new Error("Failed to create new shader");
+		if (!shader) throw new Exception("Failed to create new shader");
 		auto str = toStringz(source);
 		glShaderSource(shader, 1, &str, null);
 		glCompileShader(shader);
@@ -110,7 +120,7 @@ public class Shader {
 			GLchar[1024] info;
 			GLsizei len = 0;
 			glGetShaderInfoLog(shader, info.length, &len, info.ptr);
-			throw new Error("Shader compile failed:\n" ~ cast(string) info[0 .. len]);
+			throw new Exception("Shader compile failed:\n" ~ cast(string) info[0 .. len]);
 		}
 		return shader;
 	}
@@ -127,7 +137,7 @@ public class Shader {
 			GLchar[1024] info;
 			GLsizei len = 0;
 			glGetProgramInfoLog(program, info.length, &len, info.ptr);
-			throw new Error("Shader link failed:\n" ~ cast(string) info[0 .. len]);
+			throw new Exception("Shader link failed:\n" ~ cast(string) info[0 .. len]);
 		}
 	}
 
@@ -145,7 +155,7 @@ public class Shader {
 
 	public Uniform!T uniform (T) (string name, T cache = T.init) {
 		GLint location = glGetUniformLocation(program, toStringz(name));
-		if (location < 0) throw new Error("Uniform "~name~" not found");
+		if (location < 0) throw new Exception("Uniform "~name~" not found");
 		Uniform!T u = new Uniform!(T)(name, location, cache);
 		feeders ~= (int* i) => u.upload(i);
 		return u;
@@ -153,7 +163,7 @@ public class Shader {
 
 	public GLint address (string name) {
 		GLint location = glGetUniformLocation(program, toStringz(name));
-		if (location < 0) throw new Error("Uniform "~name~" not found");
+		if (location < 0) throw new Exception("Uniform "~name~" not found");
 		return location;
 	}
 
@@ -166,18 +176,18 @@ public class Shader {
 		glUseProgram(program);
 		glBindVertexArray(Shader.vao);
 		glBindBuffer(GL_ARRAY_BUFFER, Shader.posBuffer);
-		glBufferData(GL_ARRAY_BUFFER, Shader.positions.length * Vector.sizeof, Shader.positions.ptr, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, Shader.positions.length * Radian.sizeof, Shader.positions.ptr, GL_STATIC_DRAW);
 		glEnableVertexAttribArray(cast (GLuint) posLoc);
 		glVertexAttribPointer(cast (GLuint) posLoc, 2, GL_FLOAT, GL_FALSE, 0, null);
 	}
 
 	public void draw (Texture target, Vector4 area) {
-		if (area.z == Vector(0) || area.w == Vector(0)) return;
+		if (area.z <= Radian.zero || area.w <= Radian.zero) return;
 		Vector2 size;
 		if (target is null) {
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			size.x = screenSize.x;
-			size.y = screenSize.y;
+			size.x = Texture.screen.size.x;
+			size.y = Texture.screen.size.y;
 		} else {
 			target.use();
 			size.x = target.size.x;
@@ -187,12 +197,12 @@ public class Shader {
 
 		import std.math : floor, ceil;
 		glScissor(
-			cast (GLint) floor(area.x),
-			cast (GLint) floor(area.y),
-			cast (GLsizei) ceil(area.z),
-			cast (GLsizei) ceil(area.w),
+			cast (GLint) area.x.floor.raw,
+			cast (GLint) area.y.floor.raw,
+			cast (GLsizei) area.z.ceil.raw,
+			cast (GLsizei) area.w.ceil.raw,
 		);
-		glViewport(0, 0, cast (GLsizei) ceil(size.x), cast (GLsizei) ceil(size.y));
+		glViewport(0, 0, cast (GLsizei) size.x.ceil.raw, cast (GLsizei) size.y.ceil.raw);
 		use();
 		int texUnit = 0;
 		foreach (void delegate(int*) feeder; feeders) feeder(&texUnit);

@@ -1,110 +1,79 @@
 module bismuth.effect.blur;
 
-import bismuth;
+import bismuth.framework;
 
-private Shader shader;
-private Uniform!Texture uTexture;
-private Uniform!Vector4 uSourceRect;
-private Uniform!Vector4 uTargetRect;
-private Uniform!Vector uradius;
-private Uniform!Vector2 uangle;
-private Uniform!Vector usamples;
-private Uniform!Vector2 upx;
+class Blur {
+	private __gshared Kernel kernel;
+	private __gshared KernelParameter!Texture ktexture;
+	private __gshared KernelParameter!Vector4 ksourceRect;
+	private __gshared KernelParameter!Vector4 ktargetRect;
+	private __gshared KernelParameter!Radian  kradius;
+	private __gshared KernelParameter!Vector2 kdir;
+	private __gshared KernelParameter!Radian  ksamples;
+	private __gshared KernelParameter!Vector2 kpx;
+	private __gshared Texture a;
+	private __gshared Texture b;
 
-private Texture a;
-private Texture b;
+	private shared static this () {
+		kernel = new Kernel((Kernel k) { with (k) {
+			ktexture = uniform!Texture();
+			ksourceRect = uniform!Vector4();
+			ktargetRect = uniform!Vector4();
+			kradius = uniform!Radian();
+			kdir = uniform!Vector2();
+			ksamples = uniform!Radian();
+			kpx = uniform!Vector2();
 
-import std.math;
-import std.algorithm;
+			auto maxSamples = define(maxBlurSamples);
 
-public struct BlurInstruction {
-	Vector4 sourceRect;
-	Texture source;
-	Vector4 targetRect;
-	Texture target;
-	Vector radius;
-	Vector angle;
-	int samples = 0;
-}
+			auto texCoord = translateUV(k, ksourceRect, ktargetRect);
 
-private void drawBlur_ (BlurInstruction instruction) {
-	uTexture.set(instruction.source);
-	int samples = instruction.samples;
-	if (samples == 0) samples = cast (int) min(maxBlurSamples, max(1, ceil(instruction.radius * 0.25)) * 2);
-	
-	// Convert sourceRect from pixel coordinates to normalized texture coordinates
-	Vector2 sourceSize = instruction.source.size;
-	Vector4 normalizedSourceRect = Vector4(
-		instruction.sourceRect.x / sourceSize.x,
-		instruction.sourceRect.y / sourceSize.y,
-		(instruction.sourceRect.x + instruction.sourceRect.z) / sourceSize.x,
-		(instruction.sourceRect.y + instruction.sourceRect.w) / sourceSize.y
-	);
-	uSourceRect.set(normalizedSourceRect);
-	uTargetRect.set(instruction.targetRect);
-	uradius.set(instruction.radius);
-	uangle.set(Vector2(sin(instruction.angle), cos(instruction.angle)));
-	usamples.set(Vector(samples));
-	upx.set(Vector2(1.0, 1.0) / instruction.source.size);
+			auto blurred = ksourceRect * Radian.zero;
 
-	shader.draw(instruction.target, instruction.targetRect);
-}
+			auto s = kradius * Radian.zero;
+			loop!(int, KernelStored!int)(0, "<", maxSamples, "++", (Kernel k, KernelStored!int i) {
+				branch(op!bool(s, ">=", ksamples), (Kernel k) {break_();}, (Kernel k){});
 
-public void drawBlur (BlurInstruction instruction) {
-	if (a is null || a.size != screenSize) a = new Texture(screenSize);
-	if (b is null || b.size != screenSize) b = new Texture(screenSize);
-	Vector4 spad = instruction.sourceRect + Vector4(-instruction.radius, -instruction.radius, instruction.radius * 2, instruction.radius * 2);
-	Vector4 tpad = instruction.targetRect + Vector4(-instruction.radius, -instruction.radius, instruction.radius * 2, instruction.radius * 2);
-	drawBlur_(BlurInstruction(spad, instruction.source, tpad, a, instruction.radius, 0));
-	drawBlur_(BlurInstruction(spad, a, tpad, b, instruction.radius, PI * 0.333));
-	drawBlur_(BlurInstruction(instruction.sourceRect, b, instruction.targetRect, instruction.target, instruction.radius, PI * 0.666));
-}
+				auto t = (s + Radian(0.5)) / ksamples;
+				auto currentRadius = kradius * (Radian.one - t);
+				auto offset = kdir * kpx * currentRadius;
 
-enum int maxBlurSamples = 32;
+				blurred += sample(ktexture, texCoord + offset);
+				blurred += sample(ktexture, texCoord - offset);
+				s += 1;
+			});
 
-public void initBlur () {
-	shader = new Shader(`#version 330 core
-		precision highp float;
-		in vec2 uv;
-		out vec4 finalColor;
+			output(blurred / (ksamples * Radian.two));
+		}});
+	}
 
-		uniform sampler2D uTexture;
-		uniform vec4 sourceRect;
-		uniform vec4 targetRect;
-		uniform vec2 px;
-		
-		uniform float radius;
-		uniform vec2 angle;
-		uniform float samples;
+	public static void draw (Texture source, Vector4 sourceRect, Texture target, Vector4 targetRect, Radian radius) {
+		if (a is null || a.size != Texture.screen.size) a = new Texture(Texture.screen.size);
+		if (b is null || b.size != Texture.screen.size) b = new Texture(Texture.screen.size);
+		Vector4 spad = sourceRect + Vector4(-radius, -radius, radius * Radian.two, radius * Radian.two);
+		Vector4 tpad = targetRect + Vector4(-radius, -radius, radius * Radian.two, radius * Radian.two);
+		draw_(source, spad, a,      tpad,       radius, Degree(0));
+		draw_(a,      spad, b,      tpad,       radius, Degree(120));
+		draw_(b,      spad, target, targetRect, radius, Degree(240));
+	}
 
-		#define MAX_SAMPLES 64
+	public __gshared int maxBlurSamples = 64;
+	private static void draw_ (Texture source, Vector4 sourceRect, Texture target, Vector4 targetRect, Radian radius, Degree angle) {
+		ktexture.set(source);
+		// Convert sourceRect from pixel coordinates to normalized texture coordinates
+		Vector2 sourceSize = source.size;
+		ksourceRect.set(Vector4(
+			sourceRect.x / sourceSize.x,
+			sourceRect.y / sourceSize.y,
+			(sourceRect.x + sourceRect.z) / sourceSize.x,
+			(sourceRect.y + sourceRect.w) / sourceSize.y
+		));
+		ktargetRect.set(targetRect);
+		kradius.set(radius);
+		kdir.set(angle.direction);
+		ksamples.set(min(Radian(maxBlurSamples), (radius * Radian(0.25)).ceil.max(Radian.one) * Radian.two));
+		kpx.set(source.size.invert);
 
-		void main() {
-			vec2 texCoord = mix(sourceRect.xy, sourceRect.zw, (gl_FragCoord.xy - targetRect.xy) / targetRect.zw);
-			vec4 blurred = vec4(0.0);
-
-			float s = 0.0;
-			for (int i = 0; i < MAX_SAMPLES; i++) {
-				if (s >= samples) break;
-		
-				float t = (s + 0.5) / samples;
-				float currentRadius = radius * (1.0 - t);
-				vec2 offset = angle * px * currentRadius;
-		
-				blurred += texture(uTexture, texCoord + offset);
-				blurred += texture(uTexture, texCoord - offset);
-				s++;
-			}
-		
-			finalColor = blurred / (samples * 2);
-		}
-	`);
-
-	uTexture = shader.uniform!Texture("uTexture", a);
-	uSourceRect = shader.uniform!Vector4("sourceRect", Vector4(0.0, 0.0, 1.0, 1.0));
-	uTargetRect = shader.uniform!Vector4("targetRect", Vector4(0.0, 0.0, 1.0, 1.0));
-	uradius = shader.uniform!Vector("radius", 0);
-	uangle = shader.uniform!Vector2("angle", Vector2(0, 0));
-	usamples = shader.uniform!Vector("samples", 0);
-	upx = shader.uniform!Vector2("px", Vector2(0, 0));
+		kernel.draw(target, targetRect);
+	}
 }

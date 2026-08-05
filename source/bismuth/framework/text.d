@@ -1,19 +1,20 @@
-module bismuth.text;
+module bismuth.framework.text;
 
-import bismuth;
+import bismuth.framework;
+import bismuth.effect.stroke;
 import std.string;
 
 public struct Stroke {
 	CubicBezier bezier;
-	Vector radius;
+	Radian radius;
 }
 
 public struct FontSymbol {
 	string match;
 	Stroke[] strokes;
-	Vector weightK;
-	Vector italicsK;
-	Vector advance;
+	Radian weightK;
+	Radian italicsK;
+	Radian advance;
 }
 
 private T safeExtract(T)(const(ubyte[]) data, size_t offset) {
@@ -30,7 +31,7 @@ public class Font {
 	public __gshared Font mono;
 
 	public static void setup () {
-		import bismuth.fonts.paragraph : buildFont; buildFont();
+		import bismuth.font.paragraph : buildFont; buildFont();
 	}
 
 	public static Result!Font load(string path) {
@@ -93,9 +94,9 @@ public class Font {
 				}
 	
 				// Metrics
-				sym.weightK  = safeExtract!Vector(raw, index); index += Vector.sizeof;
-				sym.italicsK = safeExtract!Vector(raw, index); index += Vector.sizeof;
-				sym.advance  = safeExtract!Vector(raw, index); index += Vector.sizeof;
+				sym.weightK  = safeExtract!Radian(raw, index); index += Radian.sizeof;
+				sym.italicsK = safeExtract!Radian(raw, index); index += Radian.sizeof;
+				sym.advance  = safeExtract!Radian(raw, index); index += Radian.sizeof;
 	
 				// **Store in the font's array FIRST, then take its address**
 				font.symbols ~= sym;
@@ -144,12 +145,13 @@ public class Font {
 
 	public void drawText (
 		string text,
+		Vector4 c,
 		Vector2 position,
-		Vector size,
-		Vector weight, Vector
+		Radian size,
+		Radian weight, Radian
 		italic,
-		Vector maxWidth = Vector.infinity,
-		Vector newLine = -2,
+		Radian maxWidth = Radian.infinity,
+		Radian newLine = -2,
 	) {
 		FontSymbol*[] matches;
 
@@ -182,26 +184,26 @@ public class Font {
 			}
 		}
 
-		Vector2 offset = 0.0;
+		Vector2 offset = Vector2.zero;
 		int newlines = 0;
 		foreach (FontSymbol* symbol; matches) {
 			Stroke[] strokes = [];
 			foreach (Stroke stroke; (*symbol).strokes) {
 				strokes ~= Stroke(
 					CubicBezier(
-						position + (stroke.bezier.p0 + Vector2(stroke.bezier.p0.y * italic * (*symbol).italicsK, 0.0) + offset) * size,
-						position + (stroke.bezier.p1 + Vector2(stroke.bezier.p1.y * italic * (*symbol).italicsK, 0.0) + offset) * size,
-						position + (stroke.bezier.p2 + Vector2(stroke.bezier.p2.y * italic * (*symbol).italicsK, 0.0) + offset) * size,
-						position + (stroke.bezier.p3 + Vector2(stroke.bezier.p3.y * italic * (*symbol).italicsK, 0.0) + offset) * size,
+						position + (stroke.bezier.p0 + Vector2(stroke.bezier.p0.y * italic * (*symbol).italicsK, Radian.zero) + offset) * size,
+						position + (stroke.bezier.p1 + Vector2(stroke.bezier.p1.y * italic * (*symbol).italicsK, Radian.zero) + offset) * size,
+						position + (stroke.bezier.p2 + Vector2(stroke.bezier.p2.y * italic * (*symbol).italicsK, Radian.zero) + offset) * size,
+						position + (stroke.bezier.p3 + Vector2(stroke.bezier.p3.y * italic * (*symbol).italicsK, Radian.zero) + offset) * size,
 					), (stroke.radius + weight * (*symbol).weightK) * size
 				);
 			}
-			if (strokes.length > 0) drawStroke((strokes), Color.zero, Color.one);
-			offset.x += (*symbol).advance + weight * (*symbol).weightK * 2.0;
+			if (strokes.length > 0) drawStroke((strokes), Vector4.zero, c);
+			offset.x += (*symbol).advance + weight * (*symbol).weightK * Radian.two;
 			import std.math : abs;
-			if (abs(offset.x * size) > maxWidth) {
+			if ((offset.x * size).abs > maxWidth) {
 				newlines++;
-				offset = Vector2(0, newLine * newlines); // shift down
+				offset = Vector2(Radian.zero, newLine * Radian(newlines)); // shift down
 			}
 		}
 	}
@@ -253,22 +255,22 @@ public class Font {
 				data ~= ptr[0 .. Stroke.sizeof];
 			}
 
-			// weightK (Vector)
+			// weightK (Radian)
 			{
 				auto ptr = cast(ubyte*) &sym.weightK;
-				data ~= ptr[0 .. Vector.sizeof];
+				data ~= ptr[0 .. Radian.sizeof];
 			}
 
-			// italicsK (Vector)
+			// italicsK (Radian)
 			{
 				auto ptr = cast(ubyte*) &sym.italicsK;
-				data ~= ptr[0 .. Vector.sizeof];
+				data ~= ptr[0 .. Radian.sizeof];
 			}
 
-			// advance (Vector)
+			// advance (Radian)
 			{
 				auto ptr = cast(ubyte*) &sym.advance;
-				data ~= ptr[0 .. Vector.sizeof];
+				data ~= ptr[0 .. Radian.sizeof];
 			}
 		}
 

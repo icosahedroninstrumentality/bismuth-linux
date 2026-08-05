@@ -17,5 +17,7 @@
 	},
 	"preBuildCommands": ["gcc -c stb_impl.c -o stb_impl.o"],
 	"sourceFiles": ["stb_impl.o"],
-	"dflags-ldc": ["-L-Wl,--no-as-needed"]
+	"dflags-ldc": ["-L-Wl,--no-as-needed"],
+	"systemDependencies": "Requires installed libraries with headers for `opengl`, `glfw`, `m`, `heif`, and `de265`.",
+	"buildRequirements": ["allowWarnings", "disallowDeprecations"]
 }

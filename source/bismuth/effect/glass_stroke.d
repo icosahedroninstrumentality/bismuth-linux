@@ -1,19 +1,21 @@
 module bismuth.effect.glass_stroke;
 
-import bismuth;
+import bismuth.framework;
+import bismuth.effect.blur;
+import bismuth.effect.copy;
 import std.math;
 
 public struct GlassStroke {
 	CubicBezier[] beziers;
-	float radius;
-	Vector shineAngle = 0;
-	Vector blur = 0.0;
-	Color transmission = Color(0.75, 0.76, 0.77, 1.0);
-	Color reflection = Color(0.75, 0.76, 0.77, 1.0);
-	Color emission = Color(0.01, 0.02, 0.03, 1.0);
-	Color shine = Vector4.one;//Color(0.51, 0.52, 0.53, 1.0);
-	Vector refractivity = 1.0;
-	Vector reflectivity = 1.0;
+	Radian radius;
+	Degree shineAngle = 0;
+	Radian blur = 0.0;
+	Vector4 transmission = OKLCHA(Radian(0.8), Radian(0.01), Degree(180), Radian.one);
+	Vector4 reflection = OKLCHA(Radian(0.8), Radian(0.01), Degree(180), Radian.one);
+	Vector4 emission = OKLCHA(Radian(0.1), Radian(0.01), Degree(180), Radian.one);
+	Vector4 shine = Vector4.one;//Vector4(0.51, 0.52, 0.53, 1.0);
+	Radian refractivity = 1.0;
+	Radian reflectivity = 1.0;
 }
 
 public void drawGlassStroke (
@@ -21,7 +23,7 @@ public void drawGlassStroke (
 	Texture source = Texture.screen,
 	Texture target = Texture.screen
 ) {
-	Vector4 region = Vector4(float.infinity, float.infinity, -float.infinity, -float.infinity);
+	Vector4 region = Vector4.infinityR;
 
 	foreach (CubicBezier bezier; glass.beziers) {
 		import std.algorithm;
@@ -49,33 +51,33 @@ public void drawGlassStroke (
 
 	// Now region = (minX, minY, maxX, maxY)
 	// Convert to (minX, minY, width, height)
-	float width = region.z - region.x;
-	float height = region.w - region.y;
+	Radian width = region.z - region.x;
+	Radian height = region.w - region.y;
 	region.z = width;
 	region.w = height;
 
 	Vector4 paddedRegion = region + Vector4(
-		-glass.radius * 4,
-		-glass.radius * 4,
-		glass.radius * 8,
-		glass.radius * 8,
+		-glass.radius * Radian(4),
+		-glass.radius * Radian(4),
+		glass.radius * Radian(8),
+		glass.radius * Radian(8),
 	); // Add padding to ensure blur covers edges
 
 	// Ensure temporary textures match current screen size (lazy init / resize)
-	if (back is null || back.size != screenSize) back = new Texture(screenSize);
-	if (blur is null || blur.size != screenSize) blur = new Texture(screenSize);
+	if (back is null || back.size != Texture.screen.size) back = new Texture(Texture.screen.size);
+	if (blur is null || blur.size != Texture.screen.size) blur = new Texture(Texture.screen.size);
 
 	Copy.draw(paddedRegion, source, paddedRegion, back);
-	if (glass.blur == 0) {
+	if (glass.blur == Radian.zero) {
 		Copy.draw(paddedRegion, source, paddedRegion, blur);
 	} else {
-		drawBlur(BlurInstruction(paddedRegion, source, paddedRegion, blur, glass.blur));
+		Blur.draw(source, paddedRegion, blur, paddedRegion, glass.blur);
 	}
 
 	uback.set(back);
 	ublur.set(blur);
 	
-	upositions.set(cast (Vector2[]) cast (Vector[]) glass.beziers);
+	upositions.set(cast (Vector2[]) cast (Radian[]) glass.beziers);
 	ucount.set(cast (int) (glass.beziers.length));
 	uradius.set(glass.radius);
 
@@ -87,10 +89,10 @@ public void drawGlassStroke (
 	urefractivity.set(glass.refractivity);
 	ureflectivity.set(glass.reflectivity);
 
-	Vector2 shineDir = Vector2(sin(glass.shineAngle), cos(glass.shineAngle)).normalize();
-	if (shineDir.length == 0) shineDir = Vector2.one;
+	Vector2 shineDir = glass.shineAngle.direction;
+	if (shineDir.length == Radian.zero) shineDir = Vector2.one;
 	ushineDir.set(shineDir);
-	upx.set(Vector2(1, 1.0) / source.size);
+	upx.set(source.size.invert);
 	
 	shader.draw(
 		target,
@@ -102,15 +104,15 @@ private Shader shader;
 
 private Uniform!(Vector2[]) upositions;
 private Uniform!int ucount;
-private Uniform!Vector uradius;
+private Uniform!Radian uradius;
 
 private Uniform!Vector4 ureflection;
 private Uniform!Vector4 uemission;
 private Uniform!Vector4 utransmission;
 private Uniform!Vector4 ushine;
 
-private Uniform!Vector urefractivity;
-private Uniform!Vector ureflectivity;
+private Uniform!Radian urefractivity;
+private Uniform!Radian ureflectivity;
 
 private Uniform!Vector2 ushineDir;
 private Uniform!Vector2 upx;
@@ -335,15 +337,15 @@ public void initGlassStroke () {
 
 	upositions = shader.uniform!(Vector2[])("beziers", []);
 	ucount = shader.uniform!int("count", 0);
-	uradius = shader.uniform!Vector("radius", 0);
+	uradius = shader.uniform!Radian("radius", Radian.zero);
 
 	ureflection = shader.uniform!Vector4("reflection", Vector4.one);
 	uemission = shader.uniform!Vector4("emission", Vector4.one);
 	utransmission = shader.uniform!Vector4("transmission", Vector4.one);
 	ushine = shader.uniform!Vector4("shine", Vector4.one);
 
-	urefractivity = shader.uniform!Vector("refractivity", 0.0);
-	ureflectivity = shader.uniform!Vector("reflectivity", 0.0);
+	urefractivity = shader.uniform!Radian("refractivity", Radian.zero);
+	ureflectivity = shader.uniform!Radian("reflectivity", Radian.zero);
 
 	ushineDir = shader.uniform!Vector2("shineDir", Vector2.zero);
 	upx = shader.uniform!Vector2("px", Vector2.zero);

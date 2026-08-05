@@ -1,214 +1,209 @@
 module bismuth.effect.glass;
 
-import bismuth;
+import bismuth.framework;
+import bismuth.effect.blur;
+import bismuth.effect.copy;
 import std.math;
 
-public struct Glass {
-	Shape shape;
-	Vector angle = 0.0;
-	Vector shineAngle = 0;
-	Vector blur = 0.0;
-	Color transmission = Color(0.75, 0.76, 0.77, 1.0);
-	Color reflection = Color(0.75, 0.76, 0.77, 1.0);
-	Color emission = Color(0.01, 0.02, 0.03, 1.0);
-	Color shine = Vector4.one;//Color(0.51, 0.52, 0.53, 1.0);
-	Color border = Vector4.zero;//Color(0.51, 0.52, 0.53, 1.0);
-}
+public class Glass {
+	private __gshared Kernel kernel;
 
-public void drawGlass (
-	Glass glass,
-	Texture _back = Texture.screen,
-	Texture _trr = Texture.screen,
-	Texture _trl = Texture.screen,
-	Texture target = Texture.screen
-) {
-	import std.algorithm;
-	Vector2 minRadiusSize = Vector2(
-		min(glass.shape.radius.x, glass.shape.size.x),
-		min(glass.shape.radius.y, glass.shape.size.y),
-	);
-	Vector minRad = min(minRadiusSize.x, minRadiusSize.y);
-	Vector maxSize = max(glass.shape.size.x, glass.shape.size.y);
-	Vector4 region = (glass.angle == Vector(0)) ? Vector4(
-		glass.shape.position.x - glass.shape.size.x,
-		glass.shape.position.y - glass.shape.size.y,
-		glass.shape.size.x * 2,
-		glass.shape.size.y * 2,
-	) : Vector4(
-		glass.shape.position.x - glass.shape.size.x,
-		glass.shape.position.y - glass.shape.size.y,
-		glass.shape.size.x * 2,
-		glass.shape.size.y * 2,
-	);
+	private __gshared KernelParameter!Vector2 kposition;
+	private __gshared KernelParameter!Vector2 kinvSize;
+	private __gshared KernelParameter!Vector2 kpower;
+	private __gshared KernelParameter!Vector2 ksize;
+	private __gshared KernelParameter!Vector2 kcorner;
+	private __gshared KernelParameter!Radian  kminRadius;
+	private __gshared KernelParameter!Vector4 kreflection;
+	private __gshared KernelParameter!Vector4 kemission;
+	private __gshared KernelParameter!Vector4 ktransmission;
+	private __gshared KernelParameter!Vector4 kshine;
+	private __gshared KernelParameter!Vector2 krotate;
+	private __gshared KernelParameter!Vector2 kshineDir;
+	private __gshared KernelParameter!Vector2 kpx;
+	private __gshared KernelParameter!Texture kback;
+	private __gshared KernelParameter!Texture ktrr;
+	private __gshared KernelParameter!Texture ktrl;
+	private __gshared KernelParameter!Vector4 kborder;
 
-	Vector4 regionR = region + Vector4(
-		-glass.shape.radius.x, -glass.shape.radius.y,
-		 glass.shape.radius.x * 2, glass.shape.radius.y * 2,
-	);
-	Vector4 regionL = region + Vector4(
-		-glass.shape.radius.x * 4, -glass.shape.radius.y * 4,
-		 glass.shape.radius.x * 8,  glass.shape.radius.y * 8,
-	);
+	private __gshared Texture back;
+	private __gshared Texture trr;
+	private __gshared Texture trl;
 
-	// Ensure temporary textures match current screen size (lazy init / resize)
-	if (back is null || back.size != screenSize) back = new Texture(screenSize);
-	if (trr is null || trr.size != screenSize) trr = new Texture(screenSize);
-	if (trl is null || trl.size != screenSize) trl = new Texture(screenSize);
+	private shared static this () {
+		kernel = new Kernel((Kernel k) { with (k) {
+			kposition = uniform!Vector2();
+			ksize = uniform!Vector2();
+			kinvSize = uniform!Vector2();
+			kcorner = uniform!Vector2();
+			kpower = uniform!Vector2();
+			kminRadius = uniform!Radian();
+			kreflection = uniform!Vector4();
+			kemission = uniform!Vector4();
+			ktransmission = uniform!Vector4();
+			kshine = uniform!Vector4();
+			krotate = uniform!Vector2();
+			kshineDir = uniform!Vector2();
+			kpx = uniform!Vector2();
+			kback = uniform!Texture();
+			ktrr = uniform!Texture();
+			ktrl = uniform!Texture();
+			kborder = uniform!Vector4();
+			
+			KernelStored!Radian calculateMaskB() {
+				return Radian.one - min(
+					(Radian.one),
+					shapeMask(k, calculateShape(k,
+						coord.component!"xy", kposition,
+						Radian.one / (ksize - Radian.one),
+						((ksize - Radian.one) * Radian.two) / (kcorner - Radian.one + EPS),
+						krotate,
+					), kminRadius - Radian.one)
+				);
+			}
 	
-	Copy.draw(region, _back, region, back);
+			KernelStored!Radian calculateInsideS () {
+				return calculateShape(k,
+					coord.component!"xy", kposition,
+					Radian.one / (ksize - Radian(2.5)),
+					((ksize - Radian(2.5)) * Radian.two) / (kcorner - Radian(2.5) + EPS),
+					krotate,
+				);
+			}
 	
-	if (glass.blur == 0) Copy.draw(regionR, _trr, regionR, trr);
-	else drawBlur(BlurInstruction( regionR, _trr, regionR, trr, glass.blur));
-	
-	if (glass.blur == 0) Copy.draw(regionL, _trl, regionL, trl);
-	else drawBlur(BlurInstruction( regionL, _trl, regionL, trl, glass.blur));
-	
-	kback.set(back);
-	ktrr.set(trr);
-	ktrl.set(trl);
-
-	position.set(glass.shape.position);
-	size.set(glass.shape.size);
-	invSize.set(Vector2.one / glass.shape.size);
-	corner.set(glass.shape.radius);
-	power.set((glass.shape.size * 2.0) / glass.shape.radius);
-
-	minRadius.set(minRad);
-	
-	reflection.set(glass.reflection);
-	emission.set(glass.emission);
-	transmission.set(glass.transmission);
-	shine.set(glass.shine);
-	rotate.set(Vector2(cos(glass.angle), sin(glass.angle)));
-	kborder.set(glass.border);
-
-	shineDir.set(Vector2(cos(glass.shineAngle), sin(glass.shineAngle)).normalize());
-	px.set(Vector2.one / screenSize);
-	
-	kernel.draw( // exit -11 here
-		target,
-		region,
-	);
-}
-
-private Kernel kernel;
-
-private KernelParameter!Vector2 position;
-private KernelParameter!Vector2 invSize;
-private KernelParameter!Vector2 power;
-private KernelParameter!Vector2 size;
-private KernelParameter!Vector2 corner;
-private KernelParameter!Vector  minRadius;
-private KernelParameter!Vector4 reflection;
-private KernelParameter!Vector4 emission;
-private KernelParameter!Vector4 transmission;
-private KernelParameter!Vector4 shine;
-private KernelParameter!Vector2 rotate;
-private KernelParameter!Vector2 shineDir;
-private KernelParameter!Vector2 px;
-private KernelParameter!Texture kback;
-private KernelParameter!Texture ktrr;
-private KernelParameter!Texture ktrl;
-private KernelParameter!Vector4 kborder;
-
-private Texture back;
-private Texture trr;
-private Texture trl;
-
-public void initGlass () {
-	kernel = new Kernel((Kernel k) { with (k) {
-		position = uniform!Vector2();
-		size = uniform!Vector2();
-		invSize = uniform!Vector2();
-		corner = uniform!Vector2();
-		power = uniform!Vector2();
-		minRadius = uniform!Vector();
-		reflection = uniform!Vector4();
-		emission = uniform!Vector4();
-		transmission = uniform!Vector4();
-		shine = uniform!Vector4();
-		rotate = uniform!Vector2();
-		shineDir = uniform!Vector2();
-		px = uniform!Vector2();
-		kback = uniform!Texture();
-		ktrr = uniform!Texture();
-		ktrl = uniform!Texture();
-		kborder = uniform!Vector4();
-		
-		KernelStored!Vector calculateMaskB() {
-			KernelStored!Vector2 newPower = ((size - Vector(1)) * Vector(2)) / (corner - Vector(1));
-			KernelStored!Vector2 offset = coord.component!"xy" - position;
-			KernelStored!Vector2 rotated = compose(
-				offset.component!"x" * rotate.component!"x" - offset.component!"y" * rotate.component!"y",
-				offset.component!"x" * rotate.component!"y" + offset.component!"y" * rotate.component!"x"
+			KernelStored!Radian i = calculateShape(k,
+				coord.component!"xy", kposition, kinvSize, kpower, krotate
 			);
-			KernelStored!Vector2 d = pow(
-				abs(rotated / (size - Vector(1))),
-				newPower
+			earlyOutput(op!bool(i, ">", Radian.one), sample(kback, uv));
+			KernelStored!Vector3 inside = compose(
+				calculateShape(k, coord.component!"xy" + Vector2(Radian.one, Radian.zero), kposition, kinvSize, kpower, krotate),
+				calculateShape(k, coord.component!"xy" + Vector2(Radian.zero, Radian.one), kposition, kinvSize, kpower, krotate),
+				i,
 			);
-			KernelStored!Vector sum = d.component!"x" + d.component!"y";
-			return Vector(1) - min(
-				literal(Vector(1)),
-				pow(sum, minRadius - Vector(1))
+			KernelStored!Radian mask = max((Radian.zero), Radian.one - shapeMask(k, inside.component!"z", kminRadius));
+			KernelStored!Radian curvature = pow(inside.component!"z", (Radian.two));
+	
+			KernelStored!Vector2 grad = compose(inside.component!"x" - inside.component!"z", inside.component!"y" - inside.component!"z");
+			KernelStored!Vector2 dir_ = normalize(grad + EPS);
+			KernelStored!Vector2 offsetR = dir_ * curvature * kpx * kcorner * Radian.one;
+			KernelStored!Vector2 offsetL = dir_ * (Radian.one - curvature) * kpx * kcorner * Radian.two;
+	
+			KernelStored!Vector2 abberation = max(Vector2(Radian(0.5), Radian(0.5)), Radian(1.0) - Radian(6.0) / (kcorner + EPS));
+	
+			KernelStored!Vector4 refracted = compose(
+				sample(ktrr, uv - offsetR).component!"r",
+				sample(ktrr, uv - offsetR * abberation).component!"g",
+				sample(ktrr, uv - offsetR * abberation * abberation).component!"b",
+				(Radian.one),
 			);
+	
+			KernelStored!Vector4 reflected = compose(
+				sample(ktrl, uv + offsetL).component!"r",
+				sample(ktrl, uv + offsetL * abberation).component!"g",
+				sample(ktrl, uv + offsetL * abberation * abberation).component!"b",
+				(Radian.one),
+			);
+	
+			KernelStored!Radian streak = pow(abs(dot(dir_, kshineDir)), PI);
+			KernelStored!Radian shineV = calculateInsideS();
+			KernelStored!Radian shineMask = min((Radian.one), pow(shineV, kminRadius - Radian(2.5)));
+	
+			auto border = calculateMaskB();
+			output(mix(
+				sample(kback, uv),
+				mix(
+					kborder,
+					mix(
+						refracted * ktransmission,
+						reflected * kreflection,
+						curvature,
+					)
+					+ kemission
+					+ kshine * streak * shineMask,
+					border,
+				),
+				mask,
+			));
+		}});
+	}
+
+	public Shape shape = Shape(Vector2.zero, Vector2.zero, Vector2.zero, Degree(0));
+	public Degree shineAngle = 0;
+	public Radian blur = 0.0;
+	public Vector4 transmission = OKLCHA(Radian(0.95), Radian(0.01), Degree(180), Radian.one);
+	public Vector4 reflection =   OKLCHA(Radian(0.95), Radian(0.01), Degree(180), Radian.one);
+	public Vector4 emission =     OKLCHA(Radian(0.05), Radian(0.01), Degree(180), Radian.one);
+	public Vector4 shine = Vector4.one;//Vector4(0.51, 0.52, 0.53, 1.0);
+	public Vector4 border = Vector4.zero;//Vector4(0.51, 0.52, 0.53, 1.0);
+
+	public void draw (
+		Texture _back = Texture.screen,
+		Texture _trr = Texture.screen,
+		Texture _trl = Texture.screen,
+		Texture target = Texture.screen
+	) {
+		if (shape.size == Vector2.zero) return;
+		import std.algorithm;
+		Radian maxSize = max(shape.size.x, shape.size.y);
+		Vector4 region = (shape.angle == Degree(0)) ? Vector4(
+			shape.position.x - shape.size.x,
+			shape.position.y - shape.size.y,
+			shape.size.x * Radian.two,
+			shape.size.y * Radian.two,
+		) : Vector4(
+			shape.position.x - maxSize,
+			shape.position.y - maxSize,
+			maxSize * Radian.two,
+			maxSize * Radian.two,
+		);
+
+		Vector4 regionL = region + Vector4(
+			-shape.radius.x * Radian.two, -shape.radius.y * Radian.two,
+			 shape.radius.x * Radian(4),  shape.radius.y * Radian(4),
+		);
+
+		// Ensure temporary textures match current screen size (lazy init / resize)
+		if (back is null || back.size != Texture.screen.size) back = new Texture(Texture.screen.size);
+		if (trr is null || trr.size != Texture.screen.size) trr = new Texture(Texture.screen.size);
+		if (trl is null || trl.size != Texture.screen.size) trl = new Texture(Texture.screen.size);
+
+		Copy.draw(region, _back, region, back);
+
+
+		if (blur == Radian.zero) Copy.draw(regionL, _trl, regionL, trl);
+		else Blur.draw(_trl, regionL, trl, regionL, blur);
+		if (_trl == _trr) {
+			Copy.draw(region,  trl, region,  trr);
+		} else {
+			if (blur == Radian.zero) Copy.draw(region,  _trr, region,  trr);
+			else Blur.draw(_trr, region, trr, region, blur);
 		}
 
-		KernelStored!Vector calculateInsideS () {
-			KernelStored!Vector2 newPower = ((size - Vector(2)) * Vector(2)) / (corner - Vector(2));
-			KernelStored!Vector2 offset = coord.component!"xy" - position;
-			KernelStored!Vector2 rotated = compose(
-				offset.component!"x" * rotate.component!"x" - offset.component!"y" * rotate.component!"y",
-				offset.component!"x" * rotate.component!"y" + offset.component!"y" * rotate.component!"x",
-			);
-			KernelStored!Vector2 d = pow(abs(rotated / (size - Vector(2))), newPower);
-			return min(literal(Vector(1)), d.component!"x" + d.component!"y");
-		}
+		kback.set(back);
+		ktrr.set(trr);
+		ktrl.set(trl);
 
-		KernelStored!Vector i = calculateShape(k,
-			coord.component!"xy", position, invSize, power, rotate
+		kposition.set(shape.position);
+		ksize.set(shape.size);
+		kinvSize.set(Vector2.one / shape.size);
+		kcorner.set(shape.radius);
+		kpower.set(((shape.size * Radian.two) / (shape.radius + Radian.epsilon)).max(Vector2.zero));
+
+		kminRadius.set(min(shape.radius.x, shape.radius.y));
+
+		kreflection.set(reflection.opaque);
+		kemission.set(emission.opaque);
+		ktransmission.set(transmission.opaque);
+		kshine.set(shine.opaque);
+		krotate.set(shape.angle.direction);
+		kborder.set(border.opaque);
+
+		kshineDir.set(shineAngle.direction);
+		kpx.set(Vector2.one / Texture.screen.size);
+
+		kernel.draw(
+			target,
+			region,
 		);
-		earlyOutput(op!bool(i, ">", Vector(1)), sample(kback, uv));
-		KernelStored!Vector3 inside = compose(
-			calculateShape(k, coord.component!"xy" + Vector2(1, 0), position, invSize, power, rotate),
-			calculateShape(k, coord.component!"xy" + Vector2(0, 1), position, invSize, power, rotate),
-			i,
-		);
-		KernelStored!Vector mask = max(literal(Vector(0)), Vector(1) - shapeMask(k, inside.component!"z", minRadius));
-
-		KernelStored!Vector2 grad = compose(inside.component!"x" - inside.component!"z", inside.component!"y" - inside.component!"z");
-		KernelStored!Vector2 dir_ = normalize(grad + EPS);
-		KernelStored!Vector2 offsetR = dir_ * pow(inside.component!"z", literal(Vector(2))) * px * corner * Vector(2);
-		KernelStored!Vector2 offsetL = dir_ * (Vector(1) - pow(inside.component!"z", literal(Vector(2)))) * px * corner * Vector(4);
-
-		KernelStored!Vector2 abberation = max(literal(Vector2(0.5)), literal(Vector(1.0)) - literal(Vector(6.0)) / corner);
-
-		KernelStored!Vector4 refracted = compose(
-			sample(ktrr, uv - offsetR).component!"r",
-			sample(ktrr, uv - offsetR * abberation).component!"g",
-			sample(ktrr, uv - offsetR * abberation * abberation).component!"b",
-			literal(Vector(1)),
-		);
-
-		KernelStored!Vector4 reflected = compose(
-			sample(ktrl, uv + offsetL).component!"r",
-			sample(ktrl, uv + offsetL * abberation).component!"g",
-			sample(ktrl, uv + offsetL * abberation * abberation).component!"b",
-			literal(Vector(1)),
-		);
-
-		KernelStored!Vector streak = pow(abs(dot(dir_, shineDir)), PI);
-		KernelStored!Vector shineV = calculateInsideS();
-		KernelStored!Vector shineMask = min(literal(Vector(1)), pow(shineV, minRadius - Vector(2)));
-		KernelStored!Vector reflectionMask = pow(inside.component!"z", literal(Vector(2)));
-
-		auto border = calculateMaskB();
-		output(mix(
-			sample(kback, uv),
-			((refracted * transmission
-			+ reflected * reflection * reflectionMask
-			+ emission
-			) * (Vector(1)-(streak * shineMask)) + shine * streak * shineMask) * border + kborder * (Vector(1) - border),
-			mask,
-		));
-	}});
+	}
 }

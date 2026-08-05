@@ -1,23 +1,16 @@
 module bismuth.effect.stroke;
 
-import bismuth;
-import std.math;
-
-public struct CubicBezier {
-	Vector2 p0;
-	Vector2 p1;
-	Vector2 p2;
-	Vector2 p3;
-}
+import bismuth.framework;
+import bismuth.effect.copy;
 
 public void drawStroke (
 	Stroke[] strokes,
-	Color albedo,
-	Color emission,
+	Vector4 albedo,
+	Vector4 emission,
 	Texture source = Texture.screen,
 	Texture target = Texture.screen,
 ) {
-	Vector4 region = Vector4(float.infinity, float.infinity, -float.infinity, -float.infinity);
+	Vector4 region = Vector4.infinityR;
 
 	foreach (Stroke stroke; strokes) {
 		import std.algorithm;
@@ -40,8 +33,8 @@ public void drawStroke (
 	}
 	// Now region = (minX, minY, maxX, maxY)
 	// Convert to (minX, minY, width, height)
-	float width = region.z - region.x;
-	float height = region.w - region.y;
+	Radian width = region.z - region.x;
+	Radian height = region.w - region.y;
 	region.z = width;
 	region.w = height;
 
@@ -50,14 +43,14 @@ public void drawStroke (
 
 public void drawStroke (
 	Stroke[] strokes,
-	Color albedo,
-	Color emission,
+	Vector4 albedo,
+	Vector4 emission,
 	Texture source = Texture.screen,
 	Texture target = Texture.screen,
 	Vector4 region,
 ) {
 	// Ensure temporary textures match current screen size (lazy init / resize)
-	if (back is null || back.size != screenSize) back = new Texture(screenSize);
+	if (back is null || back.size != Texture.screen.size) back = new Texture(Texture.screen.size);
 	Copy.draw(region, source, region, back);
 	
 	uback.set(back);
@@ -67,10 +60,10 @@ public void drawStroke (
 	
 	CubicBezier[] beziers = [];
 	foreach (Stroke stroke; strokes) beziers ~= stroke.bezier;
-	upositions.set(cast (Vector2[]) cast (Vector[]) beziers);
+	upositions.set(cast (Vector2[]) cast (Radian[]) beziers);
 	
-	Vector[] radii = [];
-	Vector[] radii2 = [];
+	Radian[] radii = [];
+	Radian[] radii2 = [];
 	foreach (Stroke stroke; strokes) {
 		radii ~= stroke.radius;
 		radii2 ~= stroke.radius * stroke.radius;
@@ -88,8 +81,8 @@ private Shader shader;
 
 private Uniform!int ucount;
 private Uniform!(Vector2[]) upositions;
-private Uniform!(Vector[]) uradii;
-private Uniform!(Vector[]) uradii2;
+private Uniform!(Radian[]) uradii;
+private Uniform!(Radian[]) uradii2;
 
 private Uniform!Vector4 ualbedo;
 private Uniform!Vector4 uemission;
@@ -248,8 +241,8 @@ public void initStroke () {
 
 	ucount = shader.uniform!int("count", 0);
 	upositions = shader.uniform!(Vector2[])("beziers", []);
-	uradii = shader.uniform!(Vector[])("radius", []);
-	uradii2 = shader.uniform!(Vector[])("radius2", []);
+	uradii = shader.uniform!(Radian[])("radius", []);
+	uradii2 = shader.uniform!(Radian[])("radius2", []);
 
 	uemission = shader.uniform!Vector4("emission", Vector4.one);
 	ualbedo = shader.uniform!Vector4("albedo", Vector4.one);

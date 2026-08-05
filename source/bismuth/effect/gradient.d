@@ -1,133 +1,128 @@
 module bismuth.effect.gradient;
 
-import bismuth;
+import bismuth.framework;
 
-private Kernel kernel;
-private KernelParameter!Texture back;
-private KernelParameter!Vector4 krect;
-private KernelParameter!Vector2 kdir;
-private KernelParameter!Vector4 ka;
-private KernelParameter!Vector4 kb;
-private KernelParameter!Vector2 position;
-private KernelParameter!Vector2 invSize;
-private KernelParameter!Vector2 power;
-private KernelParameter!Vector corner;
-private KernelParameter!bool shaped;
+public class Gradient {
+	private __gshared Kernel kernel;
+	private __gshared KernelParameter!Texture back;
+	private __gshared KernelParameter!Vector4 krect;
+	private __gshared KernelParameter!Vector2 kdir;
+	private __gshared KernelParameter!Vector4 ka;
+	private __gshared KernelParameter!Vector4 kb;
+	private __gshared KernelParameter!Vector2 position;
+	private __gshared KernelParameter!Vector2 invSize;
+	private __gshared KernelParameter!Vector2 power;
+	private __gshared KernelParameter!Radian corner;
+	private __gshared KernelParameter!bool shaped;
 
-public void drawGradient (Texture target = Texture.screen, Texture source = Texture.screen, Shape shape, Vector angle, Color a, Color b) {
-	if (Texture.temp is null) Texture.temp = new Texture(screenSize);
-	if (Texture.temp.size != screenSize) Texture.temp = new Texture(screenSize);
-	
-	Vector4 rect = Vector4(
-		shape.position.x - shape.size.x,
-		shape.position.y - shape.size.y,
-		shape.size.x * 2,
-		shape.size.y * 2,
-	);
-	Copy.draw(rect, source, rect, Texture.temp);
-	back.set(Texture.temp);
-	position.set(shape.position);
-	power.set((shape.size * 2) / shape.radius);
-	invSize.set(Vector2.one / shape.size);
-	corner.set(min(shape.radius.x, shape.radius.y));
-	krect.set(rect / Vector4(target.size.x, target.size.y, target.size.x, target.size.y));
-	kdir.set(Vector2(cos(angle), sin(angle)));
-	ka.set(a);
-	kb.set(b);
-	shaped.set(true);
-	kernel.draw(target, rect);
-}
+	private shared static this () {
+		kernel = new Kernel((Kernel k) { with (k) {
+			back = uniform!Texture();
+			krect = uniform!Vector4();
+			kdir = uniform!Vector2();
+			ka = uniform!Vector4();
+			kb = uniform!Vector4();
+			position = uniform!Vector2();
+			invSize = uniform!Vector2();
+			power = uniform!Vector2();
+			corner = uniform!Radian();
+			shaped = uniform!bool();
 
-public void drawGradient (Texture target = Texture.screen, Texture source = Texture.screen, Vector4 rect, Vector angle, Color a, Color b) {
-	if (Texture.temp is null) Texture.temp = new Texture(screenSize);
-	if (Texture.temp.size != screenSize) Texture.temp = new Texture(screenSize);
-	Copy.draw(rect, source, rect, Texture.temp);
-	back.set(Texture.temp);
-	//position.set(shape.position);
-	//power.set((shape.size * 2) / shape.radius);
-	//invSize.set(Vector2.one / shape.size);
-	//corner.set(min(shape.radius.x, shape.radius.y));
-	krect.set(rect / Vector4(target.size.x, target.size.y, target.size.x, target.size.y));
-	kdir.set(Vector2(cos(angle), sin(angle)));
-	ka.set(a);
-	kb.set(b);
-	shaped.set(false);
-	kernel.draw(target, rect);
-}
+			branch(shaped, (Kernel k) {
+				auto inside = calculateShape(
+					k, coord.component!"xy", position, invSize, power, literal(Degree.zero.direction)
+				);
 
-public void initGradient () {
-	kernel = new Kernel((Kernel k) { with (k) {
-		back = uniform!Texture();
-		krect = uniform!Vector4();
-		kdir = uniform!Vector2();
-		ka = uniform!Vector4();
-		kb = uniform!Vector4();
-		position = uniform!Vector2();
-		invSize = uniform!Vector2();
-		power = uniform!Vector2();
-		corner = uniform!Vector();
-		shaped = uniform!bool();
+				auto wp = sample(back, uv);
+				earlyOutput(op!bool(inside, ">=", Radian.one), wp);
+				KernelStored!Radian mask = max(literal(Radian.zero), Radian.one - shapeMask(k, inside, corner * Radian(0.5)));
 
-		branch(shaped, (Kernel k) {
-			auto inside = calculateShape(
-				k, coord.component!"xy", position, invSize, power, literal(Vector2(1, 0))
-			);
+				auto corner0 = krect.component!"xy";
+				auto corner1 = krect.component!"xy" + compose(krect.component!"z", Radian.zero);
+				auto corner2 = krect.component!"xy" + compose(Radian.zero, krect.component!"w");
+				auto corner3 = krect.component!"xy" + krect.component!"zw";
 
-			auto wp = sample(back, uv);
-			earlyOutput(op!bool(inside, ">=", Vector(1)), wp);
-			KernelStored!Vector mask = max(literal(Vector(0)), Vector(1) - shapeMask(k, inside, corner * Vector(0.5)));
+				// Project corners onto the gradient direction
+				auto d0 = dot(corner0, kdir);
+				auto d1 = dot(corner1, kdir);
+				auto d2 = dot(corner2, kdir);
+				auto d3 = dot(corner3, kdir);
 
-			auto corner0 = krect.component!"xy";
-			auto corner1 = krect.component!"xy" + compose(krect.component!"z", 0.0f);
-			auto corner2 = krect.component!"xy" + compose(0.0f, krect.component!"w");
-			auto corner3 = krect.component!"xy" + krect.component!"zw";
+				auto minProj = min(min(d0, d1), min(d2, d3));
+				auto maxProj = max(max(d0, d1), max(d2, d3));
 
-			// Project corners onto the gradient direction
-			auto d0 = dot(corner0, kdir);
-			auto d1 = dot(corner1, kdir);
-			auto d2 = dot(corner2, kdir);
-			auto d3 = dot(corner3, kdir);
+				// Project current UV
+				auto proj = dot(uv, kdir);
 
-			auto minProj = min(min(d0, d1), min(d2, d3));
-			auto maxProj = max(max(d0, d1), max(d2, d3));
+				// Interpolation factor (handle degenerate case where maxProj == minProj)
+				auto t = clamp((proj - minProj) / (maxProj - minProj), Radian.zero, Radian.one);
 
-			// Project current UV
-			auto proj = dot(uv, kdir);
+				auto color = mix(
+					wp,
+					mix(ka, kb, t),
+					mask,
+				);
 
-			// Interpolation factor (handle degenerate case where maxProj == minProj)
-			auto t = clamp((proj - minProj) / (maxProj - minProj), 0.0f, 1.0f);
+				output(color);
+			}, (Kernel k) {
+				auto corner0 = krect.component!"xy";
+				auto corner1 = krect.component!"xy" + compose(krect.component!"z", Radian.zero);
+				auto corner2 = krect.component!"xy" + compose(Radian.zero, krect.component!"w");
+				auto corner3 = krect.component!"xy" + krect.component!"zw";
 
-			auto color = mix(
-				wp,
-				mix(ka, kb, t),
-				mask,
-			);
+				// Project corners onto the gradient direction
+				auto d0 = dot(corner0, kdir);
+				auto d1 = dot(corner1, kdir);
+				auto d2 = dot(corner2, kdir);
+				auto d3 = dot(corner3, kdir);
 
-			output(color);
-		}, (Kernel k) {
-			auto corner0 = krect.component!"xy";
-			auto corner1 = krect.component!"xy" + compose(krect.component!"z", 0.0f);
-			auto corner2 = krect.component!"xy" + compose(0.0f, krect.component!"w");
-			auto corner3 = krect.component!"xy" + krect.component!"zw";
+				auto minProj = min(min(d0, d1), min(d2, d3));
+				auto maxProj = max(max(d0, d1), max(d2, d3));
 
-			// Project corners onto the gradient direction
-			auto d0 = dot(corner0, kdir);
-			auto d1 = dot(corner1, kdir);
-			auto d2 = dot(corner2, kdir);
-			auto d3 = dot(corner3, kdir);
+				// Project current UV
+				auto proj = dot(uv, kdir);
 
-			auto minProj = min(min(d0, d1), min(d2, d3));
-			auto maxProj = max(max(d0, d1), max(d2, d3));
+				// Interpolation factor (handle degenerate case where maxProj == minProj)
+				auto t = clamp((proj - minProj) / (maxProj - minProj), Radian.zero, Radian.one);
 
-			// Project current UV
-			auto proj = dot(uv, kdir);
+				auto color = mix(ka, kb, t);
 
-			// Interpolation factor (handle degenerate case where maxProj == minProj)
-			auto t = clamp((proj - minProj) / (maxProj - minProj), 0.0f, 1.0f);
+				output(color);
+			});
+		}});
+	}
 
-			auto color = mix(ka, kb, t);
+	public static void draw (Texture target = Texture.screen, Texture source = Texture.screen, Shape shape, Degree angle, Vector4 a, Vector4 b) {
+		Vector4 rect = Vector4(
+			shape.position.x - shape.size.x,
+			shape.position.y - shape.size.y,
+			shape.size.x * Radian.two,
+			shape.size.y * Radian.two,
+		);
+		back.set(source);
+		position.set(shape.position);
+		power.set((shape.size * Radian.two) / shape.radius);
+		invSize.set(Vector2.one / shape.size);
+		corner.set(min(shape.radius.x, shape.radius.y));
+		krect.set(rect / Vector4(target.size.x, target.size.y, target.size.x, target.size.y));
+		kdir.set(angle.direction);
+		ka.set(a);
+		kb.set(b);
+		shaped.set(true);
+		kernel.draw(target, rect);
+	}
 
-			output(color);
-		});
-	}});
+	public static void draw (Texture target = Texture.screen, Texture source = Texture.screen, Vector4 rect, Degree angle, Vector4 a, Vector4 b) {
+		back.set(source);
+		//position.set(shape.position);
+		//power.set((shape.size * 2) / shape.radius);
+		//invSize.set(Vector2.one / shape.size);
+		//corner.set(min(shape.radius.x, shape.radius.y));
+		krect.set(rect / Vector4(target.size.x, target.size.y, target.size.x, target.size.y));
+		kdir.set(angle.direction);
+		ka.set(a);
+		kb.set(b);
+		shaped.set(false);
+		kernel.draw(target, rect);
+	}
 }

@@ -1,8 +1,10 @@
-module bismuth.texture;
+module bismuth.framework.texture;
 
+import bismuth.framework;
 import bindbc.opengl;
-import bismuth;
 import std.string;
+
+public GLuint fb;
 
 public class Texture {
 	public __gshared Texture raw = null;
@@ -22,8 +24,8 @@ public class Texture {
 		glBindTexture(GL_TEXTURE_2D, id);
 		glTexImage2D(
 			GL_TEXTURE_2D, 0, internalFormat,
-			cast (GLsizei) size.x,
-			cast (GLsizei) size.y,
+			cast (GLsizei) size.x.raw,
+			cast (GLsizei) size.y.raw,
 			0, GL_RGBA, pixelType, null
 		);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -43,18 +45,18 @@ public class Texture {
 	
 	public void fill (Vector4 color) {
 		use();
-		glViewport(0, 0, cast (GLsizei) size.x, cast (GLsizei) size.y);
-		glClearColor(cast (GLclampf) color.x, cast (GLclampf) color.y, cast (GLclampf) color.z, cast (GLclampf) color.w);
+		glViewport(0, 0, cast (GLsizei) size.x.raw, cast (GLsizei) size.y.raw);
+		glClearColor(cast (GLclampf) color.x.raw, cast (GLclampf) color.y.raw, cast (GLclampf) color.z.raw, cast (GLclampf) color.w.raw);
 		glClear(GL_COLOR_BUFFER_BIT);
 	}
 
 	public void clear () {
-		fill(Vector4(0, 0, 0, 1));
+		fill(Vector4(Radian.zero, Radian.zero, Radian.zero, Radian.one));
 	}
 
-	import bismuth.loaders.png;
-	import bismuth.loaders.jpg;
-	import bismuth.loaders.heic;
+	import bismuth.loader.png;
+	import bismuth.loader.jpg;
+	import bismuth.loader.heic;
 	import std.path : extension;
 
 	public static Texture loadFile(string fileName) {
@@ -76,7 +78,7 @@ public class Texture {
 			throw new Error("Failed to load texture file: " ~ fileName);
 
 		// Create and upload texture (same as before)
-		Texture texture = new Texture(Vector2(width, height));
+		Texture texture = new Texture(Vector2(Radian(width), Radian(height)));
 		glBindTexture(GL_TEXTURE_2D, texture.id);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
 					 cast(GLsizei)width, cast(GLsizei)height,
@@ -89,10 +91,45 @@ public class Texture {
 	
 	public static void clearRaw (Vector4 color) {
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glViewport(0, 0, cast (GLsizei) screenSize.x, cast (GLsizei) screenSize.y);
-		glClearColor(cast (GLclampf) color.x, cast (GLclampf) color.y, cast (GLclampf) color.z, cast (GLclampf) color.w);
+		glViewport(0, 0, cast (GLsizei) Texture.screen.size.x.raw, cast (GLsizei) Texture.screen.size.y.raw);
+		glClearColor(cast (GLclampf) color.x.raw, cast (GLclampf) color.y.raw, cast (GLclampf) color.z.raw, cast (GLclampf) color.w.raw);
 		glClear(GL_COLOR_BUFFER_BIT);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 	}
 }
 
+public class WTexture {
+	Texture tex;
+	Radian cellSize;
+	VTexture[][] cells;
+}
+
+ulong ceilPow2(ulong v) @safe pure nothrow @nogc {
+	ulong n = max(v, 1) - 1;
+	n |= n >> 1;
+	n |= n >> 2;
+	n |= n >> 4;
+	n |= n >> 8;
+	n |= n >> 16;
+	n |= n >> 32;
+	return n + 1;
+}
+
+public class VTexture {
+	private static WTexture[ulong] wts;
+
+	public WTexture parent = null;
+	public Vector4 rect;
+
+	private static void requestVT (Texture* parent, Vector4* rect) {
+		Radian size = rect.z.max(rect.w);
+	}
+
+	private bool cached = false;
+	private void delegate () drawCall;
+
+	private void refresh () {
+		if (!cached) drawCall();
+
+	}
+}

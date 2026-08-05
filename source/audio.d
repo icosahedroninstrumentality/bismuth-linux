@@ -1,20 +1,18 @@
 module audio;
 
-import prototypes;
-
 public class AudioInterface {
-	Optional!AudioChannel channelLeftRearSurround;
-	Optional!AudioChannel channelLeftSurround;
-	Optional!AudioChannel channelLeft;
-	Optional!AudioChannel channelCenter;
-	Optional!AudioChannel channelRight;
-	Optional!AudioChannel channelRightSurround;
-	Optional!AudioChannel channelRightRearSurround;
-	Optional!AudioChannel channelLeftTopFront;
-	Optional!AudioChannel channelLeftTopRear;
-	Optional!AudioChannel channelRightTopFront;
-	Optional!AudioChannel channelRightTopRear;
-	Optional!AudioChannel channelLowFrequencyEffect;
+	AudioChannel channelLeftRearSurround;
+	AudioChannel channelLeftSurround;
+	AudioChannel channelLeft;
+	AudioChannel channelCenter;
+	AudioChannel channelRight;
+	AudioChannel channelRightSurround;
+	AudioChannel channelRightRearSurround;
+	AudioChannel channelLeftTopFront;
+	AudioChannel channelLeftTopRear;
+	AudioChannel channelRightTopFront;
+	AudioChannel channelRightTopRear;
+	AudioChannel channelLowFrequencyEffect;
 
 	AudioInterface[] ingress;
 	AudioInterface[] egress;
