@@ -104,7 +104,7 @@ public class WTexture {
 	VTexture[][] cells;
 }
 
-ulong ceilPow2(ulong v) @safe pure nothrow @nogc {
+public @property ulong ceilPow2(ulong v) @safe pure nothrow @nogc {
 	ulong n = max(v, 1) - 1;
 	n |= n >> 1;
 	n |= n >> 2;
