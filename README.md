@@ -1,6 +1,6 @@
 # bismuth-linux
 
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Y1M324JC53)
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/icosahedroninstrumentality)
 
 Message Us on: [![telegram](https://api.iconify.design/logos/telegram.svg)](https://t.me/icosahedroninstrumentality) | [![discord](https://api.iconify.design/logos/discord.svg)](https://discordapp.com/users/icosahedroninstrumentality)
 
