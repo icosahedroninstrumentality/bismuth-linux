@@ -54,17 +54,6 @@ public struct Degree {
 	public static enum Degree zero = Degree(0);
 	public static enum Degree one = Degree(1);
 	public static enum Degree two = Degree(2);
-	public static enum Degree pi = Degree(PI);
-	public static enum Degree e = Degree(E);
-	public static enum Degree epsilon = Degree(float.epsilon);
-	public static enum Degree infinity = Degree(float.infinity);
-	public static enum Degree nan = Degree(float.nan);
-	public static enum Degree v_max = Degree(float.max);
-	public static enum Degree v_max_10_exp = Degree(float.max_10_exp);
-	public static enum Degree v_max_exp = Degree(float.max_exp);
-	public static enum Degree v_min_10_exp = Degree(float.min_10_exp);
-	public static enum Degree v_min_exp = Degree(float.min_exp);
-	public static enum Degree v_min_normal = Degree(float.min_normal);
 
 	private float data = 0;
 	pragma(inline, true) public this (T) (T d) const @safe pure nothrow @nogc if (!is(T == Radian)) { data = normalize(d); }
