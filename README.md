@@ -1,16 +1,31 @@
 # bismuth-linux
 
-This is a port of the Bismuth graphics service spec to Linux.
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Y1M324JC53)
 
-Demos:
+Message Us on: [![telegram](https://api.iconify.design/logos/telegram.svg)](https://t.me/icosahedroninstrumentality) | [![discord](https://api.iconify.design/logos/discord.svg)](https://discordapp.com/users/icosahedroninstrumentality)
 
-![Demo image showing empty windows with decorators, text above wallpaper and the new dock](./docs/windows.png)
-![Demo image (text)](./docs/text.png)
-![Demo image (text other)](./docs/text2.png)
+![Demo image showing the desktop empty, 3 open windows with decorators and different color, text above wallpaper and the new dock](./docs/windows.png)
 
-[ISC License](./LICENSE)
+Bismuth will be a novel Desktop Environment for Linux distributions. Bismuth changes the usual ownership model and paint process of desktop UI, by hosting a live UI model on the "Graphics Service", where it can be quickly drawn, updated and evaluated by the Graphics Service and apps keep their window states in sync with the Server's state.
 
-Special thanks to:
+This allows safe use of true screen space effects, like glassy reflections/refractions, to be rendered with knowledge about the rest of the screen. This enables fancy effects like "Gliss", which is Our own adapted style of  WWDC25 Liquid Glass, with way rounder and edges that look like a real piece of curved glass.
+
+Currently the desktop renders inside a GLWF window, but soon it will run on top of DRM as a standalone and fully integrated Desktop Evironment!
+
+### Special thanks to
+
 - Ky for the amazing wallpapers! [Their personal website](https://KyNorthstar.me/).
 - Konu for the amazing wallpapers!
 - Pexels uploaders whose images We used (each file as an `attribution.md` attached)
+
+### Some more demo images
+
+Redering Bismuth Fonts with variable boldness and slant, Gliss shape present:
+![](./docs/text.png)
+
+Redering Bismuth Fonts wihout variability:
+![Demo image (text other)](./docs/text2.png)
+
+### License
+
+[ISC License](./LICENSE)
