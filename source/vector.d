@@ -29,14 +29,14 @@ public struct Radian {
 	pragma(inline, true) public Radian opUnary (string op : "-") () const @safe pure nothrow @nogc { return Radian(mixin(op~"data")); }
 	pragma(inline, true) public @property Radian abs () const @safe pure nothrow @nogc { return Radian(std.math.abs(data)); }
 	pragma(inline, true) public @property Radian sqrt () const @safe pure nothrow @nogc { return Radian(std.math.sqrt(data)); }
-	pragma(inline, true) public @property Radian pow (Radian power) const @safe pure nothrow @nogc { return Radian(std.math.pow(data, power.raw)); }
+	pragma(inline, true) public Radian pow (Radian power) const @safe pure nothrow @nogc { return Radian(std.math.pow(data, power.raw)); }
 	pragma(inline, true) public @property Radian sin () const @safe pure nothrow @nogc { return Radian(std.math.sin(data)); }
 	pragma(inline, true) public @property Radian cos () const @safe pure nothrow @nogc { return Radian(std.math.cos(data)); }
 	pragma(inline, true) public @property Radian tan () const @safe pure nothrow @nogc { return Radian(std.math.tan(data)); }
-	pragma(inline, true) public @property Radian min (Radian other) const @safe pure nothrow @nogc { return Radian(std.algorithm.min(data, other.raw)); }
-	pragma(inline, true) public @property Radian max (Radian other) const @safe pure nothrow @nogc { return Radian(std.algorithm.max(data, other.raw)); }
-	pragma(inline, true) public @property Radian mix (Radian other, Radian v) const @safe pure nothrow @nogc { return Radian(this * (Radian.one - v) + other * v); }
-	pragma(inline, true) public @property Radian clamp (Radian b, Radian t) const @safe pure nothrow @nogc { return Radian(std.algorithm.clamp(data, b.raw, t.raw)); }
+	pragma(inline, true) public Radian min (Radian other) const @safe pure nothrow @nogc { return Radian(std.algorithm.min(data, other.raw)); }
+	pragma(inline, true) public Radian max (Radian other) const @safe pure nothrow @nogc { return Radian(std.algorithm.max(data, other.raw)); }
+	pragma(inline, true) public Radian mix (Radian other, Radian v) const @safe pure nothrow @nogc { return Radian(this * (Radian.one - v) + other * v); }
+	pragma(inline, true) public Radian clamp (Radian b, Radian t) const @safe pure nothrow @nogc { return Radian(std.algorithm.clamp(data, b.raw, t.raw)); }
 	pragma(inline, true) public @property Radian ceil () const @safe pure nothrow @nogc { return Radian(std.math.ceil(data)); }
 	pragma(inline, true) public @property Radian floor () const @safe pure nothrow @nogc { return Radian(std.math.floor(data)); }
 	pragma(inline, true) public @property Radian invert () const @safe pure nothrow @nogc { return Radian(1 / data); }
@@ -65,14 +65,14 @@ public struct Degree {
 	pragma(inline, true) public @property Vector2 direction () const @safe pure nothrow @nogc { return Vector2(rad.cos, rad.sin); }
 	pragma(inline, true) public @property Degree abs () const @safe pure nothrow @nogc { return Degree(std.math.abs(data)); }
 	pragma(inline, true) public @property Degree sqrt () const @safe pure nothrow @nogc { return Degree(std.math.sqrt(data)); }
-	pragma(inline, true) public @property Degree pow (Degree power) const @safe pure nothrow @nogc { return Degree(std.math.pow(data, power.raw)); }
-	pragma(inline, true) public @property Degree min (Degree other) const @safe pure nothrow @nogc { return Degree(std.algorithm.min(data, other.raw)); }
-	pragma(inline, true) public @property Degree max (Degree other) const @safe pure nothrow @nogc { return Degree(std.algorithm.max(data, other.raw)); }
-	pragma(inline, true) public @property Degree mix (Degree other, Radian v) const @safe pure nothrow @nogc { return (this.direction() * (Radian(1) - v) + other.direction() * v).angle; }
+	pragma(inline, true) public Degree pow (Degree power) const @safe pure nothrow @nogc { return Degree(std.math.pow(data, power.raw)); }
+	pragma(inline, true) public Degree min (Degree other) const @safe pure nothrow @nogc { return Degree(std.algorithm.min(data, other.raw)); }
+	pragma(inline, true) public Degree max (Degree other) const @safe pure nothrow @nogc { return Degree(std.algorithm.max(data, other.raw)); }
+	pragma(inline, true) public Degree mix (Degree other, Radian v) const @safe pure nothrow @nogc { return (this.direction() * (Radian(1) - v) + other.direction() * v).angle; }
 	pragma(inline, true) public @property Degree clamp (Degree b, Degree t) const @safe pure nothrow @nogc { return Degree(std.algorithm.clamp(data, b.raw, t.raw)); }
 	pragma(inline, true) public @property Degree ceil () const @safe pure nothrow @nogc { return Degree(std.math.ceil(data)); }
 	pragma(inline, true) public @property Degree floor () const @safe pure nothrow @nogc { return Degree(std.math.floor(data)); }
-	pragma(inline, true) private @property float normalize (float v) const @safe pure nothrow @nogc { return (360 + (v % 360)) % 360; }
+	pragma(inline, true) private float normalize (float v) const @safe pure nothrow @nogc { return (360 + (v % 360)) % 360; }
 	pragma(inline, true) public @property Degree normalized () const @safe pure nothrow @nogc { return Degree((360 + (data % 360)) % 360); }
 	pragma(inline, true) public @property Degree invert () const @safe pure nothrow @nogc { return this + Degree(180); }
 	pragma(inline, true) public bool opEquals (Degree other) const @safe pure nothrow @nogc { return other.raw == data; }
