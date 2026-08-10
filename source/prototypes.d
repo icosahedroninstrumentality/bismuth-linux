@@ -25,19 +25,31 @@ public class Live (T) {
 	public void replace (T data) {}
 }
 
-public class Events (alias CB, K) if(is(CB == delegate)) {
-	import core.sync.mutex;
+import core.sync.mutex;
+public class Events (K) {
 	
-	private Mutex mtx = new Mutex();
-	private void[CB][K] listeners = new void[CB][K];
+	private Mutex mtx;
+	private void[void delegate ()][K] listeners;
 
-	public this () {}
+	public this () {
+		mtx = new Mutex();
+	}
 
-	public Events!CB on (K key, CB cb) {
+	public Events!K on (K key, void delegate () cb) {
 		synchronized (mtx) {
 			if (key !in listeners) listeners[key] = new void [CB];
-			
+			listeners[key][cb] = null;
 		}
 		return this;
 	}
+
+}
+
+public interface Mutexed {
+	@property Mutex mtx ();
+	alias mtx this;
+}
+
+public Mutex genMutex () {
+	return new Mutex();
 }

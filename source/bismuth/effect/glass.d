@@ -25,6 +25,7 @@ public class Glass {
 	private __gshared KernelParameter!Texture ktrr;
 	private __gshared KernelParameter!Texture ktrl;
 	private __gshared KernelParameter!Vector4 kborder;
+	private __gshared KernelParameter!Radian kborderw;
 
 	private __gshared Texture back;
 	private __gshared Texture trr;
@@ -49,16 +50,17 @@ public class Glass {
 			ktrr = uniform!Texture();
 			ktrl = uniform!Texture();
 			kborder = uniform!Vector4();
+			kborderw = uniform!Radian();
 			
 			KernelStored!Radian calculateMaskB() {
 				return Radian.one - min(
 					(Radian.one),
 					shapeMask(k, calculateShape(k,
 						coord.component!"xy", kposition,
-						Radian.one / (ksize - Radian.one),
-						((ksize - Radian.one) * Radian.two) / (kcorner - Radian.one + EPS),
+						Radian.one / (ksize - kborderw),
+						((ksize - kborderw) * Radian.two) / (kcorner - kborderw),
 						krotate,
-					), kminRadius - Radian.one)
+					), kminRadius - kborderw)
 				);
 			}
 	
@@ -134,7 +136,7 @@ public class Glass {
 	public Vector4 reflection =   OKLCHA(Radian(0.95), Radian(0.01), Degree(180), Radian.one);
 	public Vector4 emission =     OKLCHA(Radian(0.05), Radian(0.01), Degree(180), Radian.one);
 	public Vector4 shine = Vector4.one;//Vector4(0.51, 0.52, 0.53, 1.0);
-	public Vector4 border = Vector4.zero;//Vector4(0.51, 0.52, 0.53, 1.0);
+	public Border border = Border(Radian(1), OKLCHA.black);//Vector4(0.51, 0.52, 0.53, 1.0);
 
 	public void draw (
 		Texture _back = Texture.screen,
@@ -196,7 +198,8 @@ public class Glass {
 		ktransmission.set(transmission.opaque);
 		kshine.set(shine.opaque);
 		krotate.set(shape.angle.direction);
-		kborder.set(border.opaque);
+		kborder.set(border.color);
+		kborderw.set(border.width);
 
 		kshineDir.set(shineAngle.direction);
 		kpx.set(Vector2.one / Texture.screen.size);

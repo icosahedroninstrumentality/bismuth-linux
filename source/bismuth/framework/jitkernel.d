@@ -155,13 +155,15 @@ private template ElementTypeFromArg(V) {
 public class Kernel {
 	private int nameCount = 0;
 	public string genName () {
-		return "_dkernel"~to!string(nameCount++);
+		return "_jitkernel"~to!string(nameCount++);
 	}
 
 	private string setupCompose = "";
 	private string main = "";
 	private void delegate(GLint)[string] lateUniformUpdate;
 	private void delegate(int*)[string] upload;
+	public void delegate(Kernel)[] prehooks;
+	public void delegate(Kernel)[] posthooks;
 	private Shader shader;
 	
 	public KernelStored!Vector4 coord;
@@ -186,7 +188,9 @@ public class Kernel {
 
 	public void draw (Texture target, Vector4 area) {
 		if (shader is null) build();
+		foreach (void delegate(Kernel) hook; prehooks) hook(this);
 		shader.draw(target, area);
+		foreach (void delegate(Kernel) hook; posthooks) hook(this);
 	}
 
 	public KernelParameter!T uniform (T) (ulong arrayLength = 1) {
@@ -281,6 +285,14 @@ public class Kernel {
 			debug { import std.stdio : writeln; try { writeln(exportCode()); } catch (Exception) {} }
 			throw err;
 		}
+	}
+
+	public void prehook (void delegate (Kernel) hook) {
+		prehooks ~= hook;
+	}
+
+	public void posthook (void delegate (Kernel) hook) {
+		posthooks ~= hook;
 	}
 }
 

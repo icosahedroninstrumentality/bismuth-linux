@@ -14,7 +14,3 @@ public void initEffects () {
 	initGlassStroke();
 	initShape();
 }
-
-public interface Effect {
-	public VTexture draw ();
-}

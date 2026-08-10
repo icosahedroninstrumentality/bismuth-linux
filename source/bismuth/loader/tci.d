@@ -2,18 +2,21 @@ module bismuth.loader.tci;
 
 import bismuth.framework;
 
-enum ColorSpace {
-	RGB,
-	RGBA,
-	LAB,
-	LABA,
-	RAW,
-	init = RGBA,
+enum ColorSpace : ushort {
+	RGB = 0,
+	RGBA = 1,
+	OKLCH = 2,
+	OKLCHA = 3,
 }
 
-class TrueColorImage {
-	uint width;
-	uint height;
+struct TCIMetadata {
+	ushort width;
+	ushort height;
 	ColorSpace colorSpace;
-	Radian[] data;
+}
+
+public void loadTCI (string file) {
+	import std.file;
+	
+	auto data = read(file);
 }

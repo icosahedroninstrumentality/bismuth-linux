@@ -100,8 +100,18 @@ public class Texture {
 
 public class WTexture {
 	Texture tex;
-	Radian cellSize;
-	VTexture[][] cells;
+	ulong cellSize = 0;
+	ulong cellCount = 0;
+	VTexture[] cells;
+	ulong rotatingPointer; // keep track of last assigned cell
+
+	this (ulong size) {
+		cellSize = size;
+		ulong mult = (size >= 1024) ? 2 : 1024 / size;
+		cellCount = mult * mult;
+		tex = new Texture(Vector2(Radian(mult * size), Radian(mult * size)));
+		cells = new VTexture[cellCount];
+	}
 }
 
 public @property ulong ceilPow2(ulong v) @safe pure nothrow @nogc {
@@ -116,20 +126,28 @@ public @property ulong ceilPow2(ulong v) @safe pure nothrow @nogc {
 }
 
 public class VTexture {
-	private static WTexture[ulong] wts;
+	private __gshared WTexture[ulong] wts;
 
+	public bool cached = true;
 	public WTexture parent = null;
 	public Vector4 rect;
 
-	private static void requestVT (Texture* parent, Vector4* rect) {
-		Radian size = rect.z.max(rect.w);
-	}
-
-	private bool cached = false;
-	private void delegate () drawCall;
-
-	private void refresh () {
-		if (!cached) drawCall();
-
+	this (Vector2 size_) {
+		if (size_ == Vector2(Radian(0), Radian(0))) {
+			rect = Vector4(Radian(0), Radian(0), Radian(0), Radian(0));
+		} else {
+			ulong size = (cast(ulong)(size_.x.max(size_.y).max(Radian(16)).ceil)).ceilPow2;
+			if (size !in wts) wts[size] = new WTexture(size);
+			ulong i = (wts[size].rotatingPointer + 1) % wts[size].cellCount;
+			if (wts[size].cells[i] !is null) wts[size].cells[i].cached = false;
+			rect = Vector4(
+				Radian((i % wts[size].cellCount) * size),
+				Radian((i / wts[size].cellCount) * size),
+				size_.x,
+				size_.y,
+			);
+			wts[size].cells[i] = this;
+			wts[size].rotatingPointer = i;
+		}
 	}
 }

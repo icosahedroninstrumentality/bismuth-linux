@@ -69,11 +69,12 @@ Degree alpha = Degree(-45);
 ulong wallpaperSelection = 0;
 
 const wallpaperfiles = [
-	//"resources/Wallpaper/.Cryo/frutiger_cryo0.jpg",
-	//"resources/Wallpaper/.Cryo/frutiger_cryo1.jpg",
-	//"resources/Wallpaper/.Cryo/frutiger_cryo3.jpg",
-	//"resources/Wallpaper/.Cryo/frutiger_cryo2.jpg",
-	//"resources/Wallpaper/.Cryo/frutiger_cryo4.jpg",
+	"resources/Wallpaper/Cryo/0.jpg",
+	"resources/Wallpaper/Cryo/1.jpg",
+	"resources/Wallpaper/Cryo/2.jpg",
+	"resources/Wallpaper/Cryo/3.jpg",
+	"resources/Wallpaper/Cryo/4.jpg",
+	"resources/Wallpaper/Cryo/5.jpg",
 	"resources/Wallpaper/Konu/IMG_8757.HEIC",
 	"resources/Wallpaper/Ky/Ky_SanLuis.heic",
 	"resources/Wallpaper/Ky/Ky_SunsetDune.heic",
@@ -92,16 +93,16 @@ const wallpaperfiles = [
 	"resources/Wallpaper/Konu/IMG_8740.HEIC",
 	"resources/Wallpaper/Konu/IMG_8741.HEIC",
 	"resources/Wallpaper/Konu/IMG_8760.HEIC",
-	"resources/Wallpaper/Crystal/Black/image.jpg",
-	"resources/Wallpaper/Crystal/Green/image.jpg",
-	"resources/Wallpaper/Crystal/Pink/image.jpg",
-	"resources/Wallpaper/Crystal/Purple/image.jpg",
-	"resources/Wallpaper/Gold/Chunks/image.jpg",
-	"resources/Wallpaper/Gold/Flat/image.jpg",
-	"resources/Wallpaper/Gold/Rough/image.jpg",
-	"resources/Wallpaper/Glass/Color/image.jpg",
-	"resources/Wallpaper/Glass/White/image.jpg",
-	"resources/Wallpaper/Glass/Black/image.jpg",
+	"resources/Wallpaper/Crystal/black.jpg",
+	"resources/Wallpaper/Crystal/green.jpg",
+	"resources/Wallpaper/Crystal/pink.jpg",
+	"resources/Wallpaper/Crystal/purple.jpg",
+	"resources/Wallpaper/Gold/chunks.jpg",
+	"resources/Wallpaper/Gold/flat.jpg",
+	"resources/Wallpaper/Gold/rough.jpg",
+	"resources/Wallpaper/Glass/color.jpg",
+	"resources/Wallpaper/Glass/white.jpg",
+	"resources/Wallpaper/Glass/black.jpg",
 ];
 
 // Define your callback
@@ -268,6 +269,8 @@ public void runVideo () {
 
 		dock.draw();
 
+		drawLogo(Vector2(Radian(x), Radian(y)));
+
 		Copy.draw(
 			Vector4(Radian.zero, Radian.zero, Texture.screen.size.x, Texture.screen.size.y),
 			Texture.screen,
@@ -279,6 +282,30 @@ public void runVideo () {
 
 		glfwPollEvents();
 	}
+}
+
+__gshared Glass logoPart1 = new Glass();
+__gshared Glass logoPart2 = new Glass();
+__gshared Glass logoPart3 = new Glass();
+__gshared Glass logoPart4 = new Glass();
+__gshared Glass logoPart5 = new Glass();
+void drawLogo (Vector2 center) {
+	logoPart1.transmission = OKLCHA(Radian(.7), Radian(.2), Degree(20));
+	logoPart2.transmission = OKLCHA(Radian(.7), Radian(.2), Degree(335));
+	logoPart3.transmission = OKLCHA(Radian(.7), Radian(.2), Degree(290));
+	logoPart4.transmission = OKLCHA(Radian(.7), Radian(.2), Degree(245));
+	logoPart5.transmission = OKLCHA(Radian(.7), Radian(.2), Degree(200));
+	logoPart1.border = Border(Radian(1), OKLCHA.white);
+	logoPart2.border = Border(Radian(1), OKLCHA.white);
+	logoPart3.border = Border(Radian(1), OKLCHA.white);
+	logoPart4.border = Border(Radian(1), OKLCHA.white);
+	logoPart5.border = Border(Radian(1), OKLCHA.white);
+	logoPart1.shape = Shape(
+		center + Vector2(Radian(20), Radian(60)),
+		Vector2(Radian(40), Radian(40)),
+		Vector2(Radian(10), Radian(10)),
+	);
+	//logoPart1.draw();
 }
 
 class Window {
@@ -307,6 +334,7 @@ class Window {
 		trafficRed = new Glass();
 		trafficOrange = new Glass();
 		trafficGreen = new Glass();
+		base.shine = OKLCHA(Radian(.75), Radian(0), Degree(0), Radian(0));
 		base.reflection = Vector4.zero;
 		base.transmission = Vector4.zero;
 		base.emission = Vector4.zero;
@@ -322,9 +350,9 @@ class Window {
 		trafficRed.emission =    OKLCHA(Radian(.75), Radian(.2), Degree( 30), Radian(1));
 		trafficOrange.emission = OKLCHA(Radian(.75), Radian(.2), Degree( 75), Radian(1));
 		trafficGreen.emission =  OKLCHA(Radian(.75), Radian(.2), Degree(135), Radian(1));
-		trafficRed.border =      OKLCHA(Radian(.6), Radian(.2), Degree( 30), Radian(1));
-		trafficOrange.border =   OKLCHA(Radian(.6), Radian(.2), Degree( 75), Radian(1));
-		trafficGreen.border =    OKLCHA(Radian(.6), Radian(.2), Degree(135), Radian(1));
+		trafficRed.border =      Border(Radian(1), OKLCHA(Radian(.6), Radian(.2), Degree( 30), Radian(1)));
+		trafficOrange.border =   Border(Radian(1), OKLCHA(Radian(.6), Radian(.2), Degree( 75), Radian(1)));
+		trafficGreen.border =    Border(Radian(1), OKLCHA(Radian(.6), Radian(.2), Degree(135), Radian(1)));
 		trafficRed.reflection =  Vector4.zero;
 		trafficOrange.reflection =  Vector4.zero;
 		trafficGreen.reflection =  Vector4.zero;
@@ -333,7 +361,7 @@ class Window {
 	public void recolor (OKLCHA _back) {
 		back = _back.opaque;
 		base.emission = back;
-		sidebar.border = theme;
+		sidebar.border = Border(Radian(1), theme);
 	}
 
 	public void resize (Vector4 _rect) {
