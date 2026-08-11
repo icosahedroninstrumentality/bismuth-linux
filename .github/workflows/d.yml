@@ -20,7 +20,14 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - uses: dlang-community/setup-dlang@4c99aa991ce7d19dd3064de0a4f2f6b2f152e2d7
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgl1-mesa-dev libglfw3-dev libheif-dev libde265-dev
+    - name: Setup D
+      uses: dlang-community/setup-dlang@v2
+      with:
+        compiler: dmd-latest
 
     - name: 'Build & Test'
       run: |
