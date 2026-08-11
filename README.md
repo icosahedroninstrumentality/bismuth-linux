@@ -1,5 +1,7 @@
 # bismuth-linux
 
+[![Build Status](https://github.com/icosahedroninstrumentality/bismuth-linux/actions/workflows/d.yml/badge.svg?branch=main)](https://github.com/icosahedroninstrumentality/bismuth-linux/actions)
+
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/icosahedroninstrumentality)
 
 Message Us on [![telegram](https://api.iconify.design/logos/telegram.svg)](https://t.me/icosahedroninstrumentality) or [![discord](https://api.iconify.design/logos/discord.svg)](https://discordapp.com/users/icosahedroninstrumentality)
