@@ -8,7 +8,7 @@ Message Us on [![telegram](https://api.iconify.design/logos/telegram.svg)](https
 
 ### Special thanks to
 
-- Ky for the amazing wallpapers! [Their personal website](https://KyNorthstar.me/), tips and programming guidance!
+- Ky for the amazing wallpapers, tips and programming guidance! [Their personal website](https://KyNorthstar.me/).
 - Konu for the amazing wallpapers.
 - Pexels uploaders whose images We used (attribution lower).
 
