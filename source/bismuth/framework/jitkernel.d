@@ -10,6 +10,7 @@ private string ext (T) (ulong S = 1) {
 	static if (is(T == bool)) return "bool";
 	else static if (is(T == int)) return "int";
 	else static if (is(T == Radian)) return "float";
+	else static if (is(T == Degree)) return "float";
 	else static if (is(T == Vector2)) return "vec2";
 	else static if (is(T == Vector3)) return "vec3";
 	else static if (is(T == Vector4)) return "vec4";
@@ -17,6 +18,7 @@ private string ext (T) (ulong S = 1) {
 	else static if (is(T == bool[])) return "bool["~to!string(S)~"]";
 	else static if (is(T == int[])) return "int["~to!string(S)~"]";
 	else static if (is(T == Radian[])) return "float["~to!string(S)~"]";
+	else static if (is(T == Degree[])) return "float["~to!string(S)~"]";
 	else static if (is(T == Vector2[])) return "vec2["~to!string(S)~"]";
 	else static if (is(T == Vector3[])) return "vec3["~to!string(S)~"]";
 	else static if (is(T == Vector4[])) return "vec4["~to!string(S)~"]";
