@@ -1,6 +1,6 @@
 # bismuth-linux
 
-[![Build Status](https://github.com/icosahedroninstrumentality/bismuth-linux/actions/workflows/d.yml/badge.svg?branch=main)](https://github.com/icosahedroninstrumentality/bismuth-linux/actions)
+[![Build Status](https://github.com/icosahedroninstrumentality/bismuth-linux/actions/workflows/stable.yml/badge.svg?branch=main)](https://github.com/icosahedroninstrumentality/bismuth-linux/actions)
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/icosahedroninstrumentality)
 
